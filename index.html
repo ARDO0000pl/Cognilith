@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COGNILITH — Sistema Interactivo de Simulación Cognitiva</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --cyan:#00e5ff;--cyan2:#00b4cc;--cyan3:#007a8a;
+  --red:#ff3b3b;--red2:#cc2222;
+  --amber:#ffaa00;--amber2:#cc8800;
+  --green:#00ff88;--green2:#00cc66;
+  --blue:#4488ff;--blue2:#2255cc;
+  --purple:#aa66ff;
+  --bg:#040d14;--bg2:#071520;--bg3:#0a1d2e;
+  --panel:#081825;--panel2:#0d2035;
+  --border:#0d4060;--border2:#1a6080;
+  --text:#c8e8f0;--text2:#7ab0c0;--text3:#3a7080;
+}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.010) 2px,rgba(0,229,255,0.010) 4px);pointer-events:none;z-index:9998;}
+
+/* ── TOPBAR ── */
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan2);}
+.logo span{color:var(--text2);font-weight:400;font-size:11px;letter-spacing:2px;display:block;margin-top:2px;}
+.status-bar{display:flex;gap:14px;align-items:center;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35};}
+.diff-badge{display:inline-block;padding:3px 10px;font-size:9px;letter-spacing:1px;font-family:'Orbitron',monospace;border-radius:2px;}
+.diff-low{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid var(--green2);}
+.diff-mid{background:rgba(255,170,0,0.1);color:var(--amber);border:1px solid var(--amber2);}
+.diff-high{background:rgba(255,59,59,0.1);color:var(--red);border:1px solid var(--red2);}
+.phase-nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;}
+.phase-btn{padding:10px 20px;border:none;background:transparent;color:var(--text3);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase;transition:all .2s;}
+.phase-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 10px var(--cyan2);}
+.phase-btn.done{color:var(--green2);}
+.phase-btn:hover:not(.active){color:var(--text2);}
+.tech{font-family:'Share Tech Mono',monospace;}
+.session-timer{font-family:'Orbitron',monospace;font-size:11px;color:var(--text3);letter-spacing:2px;}
+
+/* ── SCREENS ── */
+.screen{display:none;padding:16px;}
+.screen.active{display:block;}
+
+/* ── PANELS ── */
+.grid3{display:grid;grid-template-columns:220px 1fr 220px;gap:12px;height:calc(100vh - 142px);}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:12px;position:relative;overflow:hidden;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan3),transparent);}
+.panel-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:600;color:var(--cyan2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.metric{margin-bottom:10px;}
+.metric-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.metric-label{font-size:10px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;}
+.metric-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.metric-val.low{color:var(--green);}
+.metric-val.mid{color:var(--amber);}
+.metric-val.high{color:var(--red);}
+.bar-track{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.bar-cyan{background:var(--cyan2);}
+.bar-red{background:var(--red2);}
+.bar-amber{background:var(--amber2);}
+.wave-container{margin:6px 0;height:38px;overflow:hidden;}
+.wave-label{font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:2px;}
+canvas.wave{width:100%;height:100%;display:block;}
+.rt-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:6px 0;}
+.rt-cell{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:5px;text-align:center;}
+.rt-num{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.rt-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+/* ── VR CENTER ── */
+.vr-env{background:var(--bg);border:1px solid var(--border2);border-radius:4px;flex:1;position:relative;overflow:hidden;min-height:200px;}
+canvas.scene3d{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;}
+.vr-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(4,13,20,.96));padding:14px 20px;text-align:center;pointer-events:none;}
+.vr-overlay button{pointer-events:all;}
+.challenge-text{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.challenge-val{font-family:'Orbitron',monospace;font-size:12px;color:var(--cyan);letter-spacing:1px;margin-bottom:8px;}
+.play-btn{padding:9px 28px;background:transparent;border:1px solid var(--amber);color:var(--amber);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .3s;}
+.play-btn:hover{background:rgba(255,170,0,.12);box-shadow:0 0 16px rgba(255,170,0,.3);}
+
+/* ── PSYCH PANEL ── */
+.cfg-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.cfg-label{font-size:10px;color:var(--text3);letter-spacing:1px;}
+.cfg-select{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:11px;padding:3px 6px;border-radius:2px;cursor:pointer;}
+.btn-sys{width:100%;padding:7px 10px;border:none;font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:5px;}
+.btn-start{background:rgba(0,229,255,.1);border:1px solid var(--cyan3);color:var(--cyan);}
+.btn-start:hover{background:rgba(0,229,255,.2);}
+.btn-pause{background:rgba(255,170,0,.1);border:1px solid var(--amber2);color:var(--amber);}
+.btn-export{background:rgba(0,255,136,.1);border:1px solid var(--green2);color:var(--green);}
+.brain-container{width:100%;height:130px;position:relative;}
+canvas.brain{width:100%;height:100%;display:block;}
+.brain-legend{display:flex;flex-direction:column;gap:3px;margin-top:5px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.neuro-wave{height:36px;}
+canvas.nwave{width:100%;height:100%;display:block;}
+.alert-box{padding:5px 7px;margin-bottom:5px;border-left:2px solid;display:flex;gap:5px;align-items:flex-start;}
+.alert-box.warn{border-color:var(--amber);background:rgba(255,170,0,.05);}
+.alert-box.danger{border-color:var(--red);background:rgba(255,59,59,.05);}
+.alert-box.info{border-color:var(--cyan);background:rgba(0,229,255,.05);}
+.alert-text{font-size:10px;color:var(--text2);line-height:1.4;}
+
+/* ── CALIB SCREEN ── */
+.calib-container{max-width:680px;margin:0 auto;padding:30px 20px;}
+.calib-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);margin-bottom:6px;text-shadow:0 0 20px var(--cyan2);}
+.calib-sub{font-size:13px;color:var(--text2);margin-bottom:28px;letter-spacing:1px;}
+.calib-step{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:14px;}
+.calib-step-title{font-family:'Orbitron',monospace;font-size:10px;color:var(--cyan2);letter-spacing:2px;margin-bottom:12px;}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.slider-label{font-size:12px;color:var(--text2);width:160px;flex-shrink:0;}
+input[type=range]{flex:1;accent-color:var(--cyan);}
+.slider-val{font-family:'Orbitron',monospace;font-size:12px;color:var(--cyan);width:55px;text-align:right;}
+.baseline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.baseline-cell{background:var(--bg3);border:1px solid var(--border);padding:10px;text-align:center;border-radius:2px;}
+.baseline-val{font-family:'Orbitron',monospace;font-size:17px;color:var(--text3);}
+.baseline-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:3px;}
+.calib-btn{margin-top:18px;padding:12px 40px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .3s;display:block;width:100%;}
+.calib-btn:hover{background:rgba(0,229,255,.1);box-shadow:0 0 16px rgba(0,229,255,.2);}
+
+/* ── SCENARIO PICKER ── */
+.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px;}
+.sc-card{background:var(--bg3);border:2px solid var(--border);border-radius:6px;padding:14px 12px;cursor:pointer;transition:all .25s;position:relative;}
+.sc-card:hover{border-color:var(--cyan2);background:rgba(0,180,200,.07);}
+.sc-card.selected{border-color:var(--cyan);background:rgba(0,229,255,.09);box-shadow:0 0 12px rgba(0,229,255,.18);}
+.sc-name{font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan2);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
+.sc-desc{font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:8px;}
+.sc-mood{display:inline-block;font-size:9px;padding:2px 8px;border-radius:2px;letter-spacing:1px;font-family:'Orbitron',monospace;}
+
+/* ── TUTORIAL MODAL ── */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,8,16,.92);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:var(--panel2);border:1px solid var(--border2);border-radius:6px;padding:28px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;}
+.modal-title{font-family:'Orbitron',monospace;font-size:15px;color:var(--cyan);letter-spacing:2px;margin-bottom:16px;}
+.tut-step{display:none;}
+.tut-step.active{display:block;}
+.tut-icon{font-size:40px;text-align:center;margin-bottom:12px;}
+.tut-h{font-family:'Orbitron',monospace;font-size:12px;color:var(--amber);letter-spacing:1px;margin-bottom:8px;}
+.tut-p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px;}
+.tut-tip{background:rgba(0,229,255,.06);border-left:2px solid var(--cyan3);padding:8px 12px;font-size:12px;color:var(--text2);margin-top:10px;border-radius:0 3px 3px 0;}
+.tut-nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+.tut-dots{display:flex;gap:6px;}
+.tut-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);transition:.2s;}
+.tut-dot.active{background:var(--cyan);}
+.tut-btn{padding:8px 22px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.2s;}
+.tut-btn:hover{background:rgba(0,229,255,.1);}
+.tut-btn.amber{border-color:var(--amber);color:var(--amber);}
+.tut-btn.amber:hover{background:rgba(255,170,0,.1);}
+
+/* ── RESULTS ── */
+.results-container{max-width:920px;margin:0 auto;padding:18px;}
+.results-header{text-align:center;margin-bottom:20px;}
+.results-title{font-family:'Orbitron',monospace;font-size:18px;color:var(--amber);margin-bottom:4px;}
+.results-sub{font-size:12px;color:var(--text2);}
+.results-grid2{display:grid;grid-template-columns:220px 1fr;gap:14px;margin-bottom:14px;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.result-panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px;}
+.result-panel-title{font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan2);letter-spacing:2px;margin-bottom:10px;}
+.big-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.big-metric{background:var(--bg3);border:1px solid var(--border);padding:9px;text-align:center;border-radius:2px;}
+.big-num{font-family:'Orbitron',monospace;font-size:19px;font-weight:700;}
+.big-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;}
+.gauge-container{width:100%;height:110px;position:relative;display:flex;align-items:center;justify-content:center;}
+canvas.gauge{width:110px;height:110px;}
+.gauge-center{position:absolute;text-align:center;}
+.gauge-num{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--cyan);}
+.gauge-sub{font-size:9px;color:var(--text3);letter-spacing:1px;}
+.export-btn{margin-top:10px;padding:8px 16px;background:rgba(255,59,59,.1);border:1px solid var(--red2);color:var(--red);font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;width:100%;}
+.new-session-btn{margin-top:6px;padding:8px 16px;background:rgba(0,229,255,.1);border:1px solid var(--cyan3);color:var(--cyan);font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:block;width:100%;}
+.stat-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+.stat-lbl{font-size:11px;color:var(--text2);}
+.stat-val{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);}
+.rec-list{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.rec-item{display:flex;gap:7px;align-items:flex-start;padding:5px;background:var(--bg3);border-radius:2px;}
+.rec-icon{font-size:13px;flex-shrink:0;}
+.rec-text{font-size:11px;color:var(--text2);line-height:1.4;}
+
+/* ── NOTIFICATION ── */
+.notif{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--cyan);padding:10px 14px;border-radius:4px;font-size:12px;color:var(--text);max-width:280px;z-index:9997;transform:translateX(340px);transition:transform .3s ease;font-family:'Rajdhani',sans-serif;}
+.notif.show{transform:translateX(0);}
+.notif.warn{border-left-color:var(--amber);}
+.notif.danger{border-left-color:var(--red);}
+
+/* ── WEB AUDIO / NVS ── */
+.audio-status{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:6px;}
+.audio-icon{font-size:12px;color:var(--text3);}
+.audio-label{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;flex:1;}
+.audio-toggle{padding:2px 8px;background:transparent;border:1px solid var(--border);color:var(--text3);font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:.2s;}
+.audio-toggle.on{border-color:var(--cyan3);color:var(--cyan2);}
+.audio-toggle:hover{background:rgba(0,229,255,.07);}
+
+/* ── SEMÁFORO COGNITIVO ── */
+.semaforo{display:flex;flex-direction:column;gap:5px;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-top:6px;}
+.semaforo-title{font-family:'Orbitron',monospace;font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;}
+.semaforo-row{display:flex;align-items:center;gap:8px;}
+.semaforo-light{width:12px;height:12px;border-radius:50%;flex-shrink:0;transition:all .4s;box-shadow:none;}
+.semaforo-light.on-green{background:var(--green);box-shadow:0 0 10px var(--green);}
+.semaforo-light.on-amber{background:var(--amber);box-shadow:0 0 10px var(--amber);}
+.semaforo-light.on-red{background:var(--red);box-shadow:0 0 10px var(--red);}
+.semaforo-light.off{background:rgba(255,255,255,.08);}
+.semaforo-lbl{font-size:9px;color:var(--text3);letter-spacing:.5px;flex:1;}
+.semaforo-state{font-family:'Orbitron',monospace;font-size:9px;}
+
+/* ── MTC BADGE ── */
+.mtc-badge{display:inline-block;padding:4px 10px;font-size:9px;font-family:'Orbitron',monospace;letter-spacing:1px;border-radius:2px;text-align:center;width:100%;margin-top:5px;transition:all .3s;}
+.mtc-eficiencia{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid var(--cyan3);}
+.mtc-media{background:rgba(255,170,0,.1);color:var(--amber);border:1px solid var(--amber2);}
+.mtc-carga{background:rgba(255,59,59,.1);color:var(--red);border:1px solid var(--red2);}
+
+/* ── AUDIO RETO (Reto 1) ── */
+.audio-challenge{padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin:5px 0;}
+.audio-challenge-title{font-size:9px;color:var(--cyan2);letter-spacing:1px;font-family:'Orbitron',monospace;text-transform:uppercase;margin-bottom:5px;}
+.audio-bars{display:flex;align-items:flex-end;gap:3px;height:32px;justify-content:center;}
+.audio-bar{width:8px;border-radius:2px 2px 0 0;background:var(--cyan3);transition:height .08s;}
+.audio-bar.active{background:var(--cyan);}
+
+/* ── NVS OVERLAY ── */
+#nvsOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;transition:all .8s ease;z-index:5;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="logo">COGNILITH <span>SISTEMA DE SIMULACIÓN COGNITIVA v1.0</span></div>
+  <div class="status-bar">
+    <span class="session-timer tech" id="timerDisplay">00:00</span>
+    <div class="status-dot" id="statusDot"></div>
+    <span class="tech" id="statusText" style="font-size:10px;color:var(--text3);letter-spacing:1px;">SISTEMA LISTO</span>
+    <span class="diff-badge diff-mid" id="diffBadge">DIFICULTAD: MEDIA</span>
+  </div>
+</div>
+
+<!-- ══ PHASE NAV ══ -->
+<div class="phase-nav">
+  <button class="phase-btn active" onclick="showScreen('calib')" id="btn-calib">I. CALIBRACIÓN</button>
+  <button class="phase-btn" onclick="showScreen('game')" id="btn-game">II. SIMULACIÓN ADAPTATIVA</button>
+  <button class="phase-btn" onclick="showScreen('results')" id="btn-results">III–V. RESULTADOS · NVS · REPORTE</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1 — CALIBRACIÓN
+══════════════════════════════════════════ -->
+<div class="screen active" id="screen-calib">
+<div class="calib-container">
+  <div class="calib-title">FASE I — CALIBRACIÓN</div>
+  <div class="calib-sub">Establece tu línea base cognitiva antes de iniciar la sesión</div>
+
+  <!-- Perfil -->
+  <div class="calib-step">
+    <div class="calib-step-title">PERFIL DE USUARIO</div>
+    <div class="slider-row">
+      <span class="slider-label">Nombre</span>
+      <input type="text" id="userName" value="Usuario" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-family:'Rajdhani',sans-serif;font-size:13px;border-radius:2px;">
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Tipo de sesión</span>
+      <select id="sessionType" class="cfg-select" style="flex:1;">
+        <option>Mindfulness y Bienestar</option>
+        <option>Entrevista de Trabajo</option>
+        <option>Operacion de Maquinaria</option>
+        <option>Examen de Conduccion</option>
+        <option>Examen Academico</option>
+        <option>Atencion Sostenida</option>
+        <option>Control Inhibitorio</option>
+        <option>Memoria de Trabajo</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Escenario / Contexto de uso -->
+  <div class="calib-step">
+    <div class="calib-step-title">SELECCIONA EL CONTEXTO DE SIMULACIÓN</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;letter-spacing:.5px;">Elige el escenario que mejor describe tu situación actual. El sistema ajustará el entorno virtual y la interpretación cognitiva según el contexto seleccionado.</div>
+    <div class="scenario-grid">
+      <div class="sc-card selected" onclick="selectScenario(this,'bosque')" id="sc-bosque">
+        <div class="sc-name">CALMA Y FOCO</div>
+        <div class="sc-desc">Me siento sereno. Busco concentración y equilibrio mental.</div>
+        <span class="sc-mood" style="background:rgba(0,255,136,.12);color:var(--green2);border:1px solid var(--green2);">BIENESTAR</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'entrevista')" id="sc-entrevista">
+        <div class="sc-name">ENTREVISTA DE TRABAJO</div>
+        <div class="sc-desc">Preparo una entrevista. Quiero medir mi nivel de estrés y agilidad mental bajo presión social.</div>
+        <span class="sc-mood" style="background:rgba(68,136,255,.12);color:var(--blue);border:1px solid var(--blue2);">PRESIÓN SOCIAL</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'maquinaria')" id="sc-maquinaria">
+        <div class="sc-name">OPERACIÓN DE MAQUINARIA</div>
+        <div class="sc-desc">Trabajo con maquinaria industrial. Evalúo mi atención sostenida y tiempo de reacción para operar con seguridad.</div>
+        <span class="sc-mood" style="background:rgba(255,170,0,.12);color:var(--amber);border:1px solid var(--amber2);">SEGURIDAD LABORAL</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'conduccion')" id="sc-conduccion">
+        <div class="sc-name">EXAMEN DE CONDUCCIÓN</div>
+        <div class="sc-desc">Me preparo para el examen de conducción. Evalúo reflejos, inhibición de respuesta y atención dividida.</div>
+        <span class="sc-mood" style="background:rgba(0,180,220,.12);color:var(--cyan2);border:1px solid var(--cyan3);">HABILIDAD VIAL</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'examen')" id="sc-examen">
+        <div class="sc-name">EXAMEN ACADEMICO</div>
+        <div class="sc-desc">Tengo un examen próximo. Mido mi capacidad de concentración, memoria de trabajo y carga mental.</div>
+        <span class="sc-mood" style="background:rgba(170,136,255,.12);color:var(--purple);border:1px solid var(--purple);">RENDIMIENTO ACADEMICO</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'estres')" id="sc-estres">
+        <div class="sc-name">ALTA CARGA Y ESTRES</div>
+        <div class="sc-desc">Me siento bajo mucha presión o estrés. Quiero evaluar mi nivel de resiliencia cognitiva.</div>
+        <span class="sc-mood" style="background:rgba(255,59,59,.12);color:var(--red);border:1px solid var(--red2);">RESILIENCIA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sensibilidad -->
+  <div class="calib-step">
+    <div class="calib-step-title">CONFIGURACIÓN DE SENSIBILIDAD</div>
+    <div class="slider-row">
+      <span class="slider-label">Sensibilidad visual</span>
+      <input type="range" min="1" max="10" value="5" id="sensVis" oninput="updateCalib()">
+      <span class="slider-val" id="sensVisVal">5</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Velocidad de respuesta base</span>
+      <input type="range" min="500" max="3000" value="1500" id="respBase" oninput="updateCalib()">
+      <span class="slider-val" id="respBaseVal">1500ms</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Umbral de carga cognitiva</span>
+      <input type="range" min="1" max="10" value="5" id="umbral" oninput="updateCalib()">
+      <span class="slider-val" id="umbralVal">5</span>
+    </div>
+  </div>
+
+  <!-- Línea base -->
+  <div class="calib-step">
+    <div class="calib-step-title">LÍNEA BASE COGNITIVA — ESTADO NEUTRO</div>
+    <div class="baseline-grid">
+      <div class="baseline-cell"><div class="baseline-val" id="baseAt">--</div><div class="baseline-lbl">ATENCIÓN</div></div>
+      <div class="baseline-cell"><div class="baseline-val" id="baseEs">--</div><div class="baseline-lbl">ESTRÉS</div></div>
+      <div class="baseline-cell"><div class="baseline-val" id="baseCg">--</div><div class="baseline-lbl">CARGA COGNITIVA</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3);">El encéfalo 3D aparece en estado neutro. No hay activaciones destacadas hasta iniciar la sesión.</div>
+  </div>
+
+  <button class="calib-btn" id="calibBtn" onclick="startCalibration()">INICIAR CALIBRACIÓN</button>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2 — JUEGO
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-game">
+<div class="grid3">
+
+  <!-- LEFT -->
+  <div class="panel" style="overflow-y:auto;">
+    <div class="panel-title">DATOS DEL USUARIO</div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">ATENCIÓN</span><span class="metric-val" id="metAt">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-cyan" id="barAt" style="width:0%"></div></div>
+    </div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">ESTRÉS <span style="font-size:9px;color:var(--text3)">(Resp.)</span></span><span class="metric-val" id="metEs">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-red" id="barEs" style="width:0%"></div></div>
+    </div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">CARGA COGNITIVA</span><span class="metric-val" id="metCg">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-amber" id="barCg" style="width:0%"></div></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="wave-label">EEG BRAINWAVES (α,β,θ)</div>
+      <div class="wave-container"><canvas class="wave" id="waveEEG"></canvas></div>
+      <div class="wave-label" style="margin-top:3px;">FRECUENCIA CARDÍACA (BPM)</div>
+      <div class="wave-container"><canvas class="wave" id="waveBPM"></canvas></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="panel-title" style="margin-bottom:5px;">MÉTRICAS CONDUCTUALES</div>
+      <div class="rt-grid" style="grid-template-columns:1fr;">
+        <div class="rt-cell"><div class="rt-num" id="rtLat" style="color:var(--cyan);">--</div><div class="rt-lbl">LATENCIA</div></div>
+      </div>
+      <div class="rt-grid">
+        <div class="rt-cell"><div class="rt-num" id="rtPrec" style="color:var(--green);">--%</div><div class="rt-lbl">PRECISIÓN</div></div>
+        <div class="rt-cell"><div class="rt-num" id="rtNav" style="color:var(--amber);">--</div><div class="rt-lbl">NAVEGACIÓN</div></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="panel-title" style="margin-bottom:5px;">PUNTUACIÓN</div>
+      <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--amber);text-align:center;" id="scorePanel">0</div>
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:2px;">PUNTOS ACUMULADOS</div>
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);text-align:center;margin-top:4px;" id="comboPanel"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="panel" style="padding:8px;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="panel-title" style="margin:0;">SISTEMA INTELIGENTE — SIMULADOR VIRTUAL</div>
+      <span class="session-timer tech" id="gameTimer">00:00</span>
+    </div>
+    <div class="vr-env">
+      <canvas class="scene3d" id="scene3d"></canvas>
+      <div id="nvsOverlay"></div>
+      <div class="vr-overlay">
+        <div class="challenge-text">RETO ACTIVO</div>
+        <div class="challenge-val" id="challengeText">Presiona INICIAR en el panel derecho</div>
+        <button class="play-btn" id="playBtn" onclick="toggleGame()">INICIAR SIMULACION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel" style="overflow-y:auto;">
+    <div class="panel-title">PANEL DEL PSICÓLOGO</div>
+    <div class="cfg-row"><span class="cfg-label">TIPO DE SESIÓN</span>
+      <select class="cfg-select" id="gameSessionType"><option>Mindfulness</option><option>Atención</option><option>Memoria</option></select></div>
+    <div class="cfg-row"><span class="cfg-label">MODO DE SESIÓN</span>
+      <select class="cfg-select"><option>Ninguno</option><option>Guiado</option><option>Libre</option></select></div>
+    <div class="cfg-row"><span class="cfg-label">FEEDBACK MODE</span>
+      <select class="cfg-select"><option>Luz Inmersiva</option><option>Visual</option><option>Auditivo</option></select></div>
+    <div class="cfg-row"><span class="cfg-label">BORDES ANÁLISIS</span>
+      <span class="diff-badge diff-mid" id="bordeBadge">ACTIVO</span></div>
+    <div style="margin-top:6px;">
+      <button class="btn-sys btn-start" id="btnIniciar" onclick="iniciarSesion()">INICIAR</button>
+      <button class="btn-sys btn-pause" id="btnPausar" onclick="pausarSesion()">PAUSAR</button>
+      <button class="btn-sys btn-export" onclick="exportarReporte()">EXPORTAR REPORTE</button>
+    </div>
+    <!-- SEMÁFORO COGNITIVO -->
+    <div class="semaforo">
+      <div class="semaforo-title">SEMÁFORO COGNITIVO (MTC)</div>
+      <div class="semaforo-row"><div class="semaforo-light off" id="sLightGreen"></div><span class="semaforo-lbl">Alta Eficiencia</span><span class="semaforo-state" id="sLblGreen" style="color:var(--green);"></span></div>
+      <div class="semaforo-row"><div class="semaforo-light off" id="sLightAmber"></div><span class="semaforo-lbl">Carga Media</span><span class="semaforo-state" id="sLblAmber" style="color:var(--amber);"></span></div>
+      <div class="semaforo-row"><div class="semaforo-light off" id="sLightRed"></div><span class="semaforo-lbl">Alta Carga / Estrés</span><span class="semaforo-state" id="sLblRed" style="color:var(--red);"></span></div>
+      <div class="mtc-badge mtc-media" id="mtcBadge">CARGA MEDIA</div>
+    </div>
+    <!-- WEB AUDIO TOGGLE -->
+    <div class="audio-status" style="margin-top:6px;">
+      <span class="audio-icon">♪</span>
+      <span class="audio-label">Web Audio API</span>
+      <button class="audio-toggle on" id="audioToggle" onclick="toggleAudio()">ON</button>
+    </div>
+    <!-- RETO AUDITIVO VISUALIZER -->
+    <div class="audio-challenge" id="audioVisualizer" style="display:none;">
+      <div class="audio-challenge-title">PROCESAMIENTO AUDITIVO</div>
+      <div class="audio-bars" id="audioBars">
+        <div class="audio-bar" style="height:10px;"></div>
+        <div class="audio-bar" style="height:20px;"></div>
+        <div class="audio-bar" style="height:14px;"></div>
+        <div class="audio-bar" style="height:25px;"></div>
+        <div class="audio-bar" style="height:8px;"></div>
+        <div class="audio-bar" style="height:18px;"></div>
+        <div class="audio-bar" style="height:22px;"></div>
+        <div class="audio-bar" style="height:12px;"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">ENCÉFALO 3D EN TIEMPO REAL</div>
+      <div class="brain-container"><canvas class="brain" id="brainCanvas"></canvas></div>
+      <div class="brain-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4488ff;"></div>Atención — Corteza prefrontal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff3b3b;"></div>Estrés — Amígdala</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffaa00;"></div>Carga Cognitiva</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">REPRESENTACIÓN NEUROFISIOLÓGICA</div>
+      <div class="neuro-wave"><canvas class="nwave" id="neuroWave"></canvas></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">ALERTAS DEL SISTEMA</div>
+      <div id="alertasList"><div class="alert-box info"><span class="rec-icon">ℹ</span><span class="alert-text">Sistema listo para iniciar sesión</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3 — RESULTADOS
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-results">
+<div class="results-container">
+  <div class="results-header">
+    <div class="results-title">SISTEMA INTELIGENTE — SESIÓN FINALIZADA</div>
+    <div class="results-sub tech" id="resultsUser">Usuario · Sesión completada</div>
+  </div>
+  <div class="results-grid2">
+    <div class="result-panel" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="result-panel-title" style="text-align:center;width:100%;">EFICIENCIA COGNITIVA</div>
+      <div class="gauge-container">
+        <canvas class="gauge" id="gaugeCanvas" width="110" height="110"></canvas>
+        <div class="gauge-center"><div class="gauge-num" id="gaugeNum">--</div><div class="gauge-sub">/100</div></div>
+      </div>
+      <button class="export-btn" onclick="exportarJSON()">EXPORTAR INFORME JSON</button>
+      <button class="new-session-btn" onclick="nuevaSesion()">INICIAR NUEVA SESIÓN</button>
+    </div>
+    <div class="result-panel">
+      <div class="result-panel-title">ESTADO CEREBRAL FINAL</div>
+      <div class="big-metrics">
+        <div class="big-metric"><div class="big-num" id="resAt" style="color:var(--blue);">--</div><div class="big-lbl">ATENCIÓN</div></div>
+        <div class="big-metric"><div class="big-num" id="resEs" style="color:var(--red);">--</div><div class="big-lbl">ESTRÉS</div></div>
+        <div class="big-metric"><div class="big-num" id="resCg" style="color:var(--amber);">--</div><div class="big-lbl">CARGA COGN.</div></div>
+      </div>
+      <div class="rt-grid">
+        <div class="rt-cell"><div class="rt-num" id="resLatS" style="color:var(--red);">--</div><div class="rt-lbl">LATENCIA</div><div style="font-size:10px;color:var(--text3);margin-top:2px;" id="resLatV">-- seg.</div></div>
+        <div class="rt-cell"><div class="rt-num" id="resPrecS" style="color:var(--red);">--</div><div class="rt-lbl">PRECISIÓN</div><div style="font-size:10px;color:var(--text3);margin-top:2px;" id="resPrecV">--%</div></div>
+        <div class="rt-cell"><div class="rt-num" id="resNavV" style="color:var(--amber);">--</div><div class="rt-lbl">NAVEGACIÓN</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">mov/min</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:7px;border-top:1px solid var(--border);">
+        <span class="tech" style="font-size:11px;color:var(--text3);">DURACIÓN: <span id="resDur" style="color:var(--text2);">--</span></span>
+        <span class="diff-badge" id="resDiff">DIFICULTAD: MEDIA</span>
+      </div>
+      <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--border);">
+        <div class="panel-title" style="margin-bottom:5px;">PUNTUACIÓN FINAL</div>
+        <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--amber);text-align:center;" id="resScore">0</div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:2px;" id="resScoreSub">puntos · -- aciertos / -- intentos</div>
+      </div>
+    </div>
+  </div>
+  <div class="results-grid">
+    <div class="result-panel">
+      <div class="result-panel-title">ESTADO CEREBRAL — MAPA</div>
+      <div style="height:150px;"><canvas id="brainResult" style="width:100%;height:100%;display:block;"></canvas></div>
+      <div class="brain-legend" style="margin-top:6px;">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--cyan);"></div>Atención</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>Estrés</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>Carga Cognitiva</div>
+      </div>
+    </div>
+    <div class="result-panel">
+      <div class="result-panel-title">SE RECOMIENDA ANALIZAR</div>
+      <ul class="rec-list" id="recList"><li class="rec-item"><span class="rec-text">Complete la sesion para ver recomendaciones</span></li></ul>
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px;">
+        <div class="result-panel-title">REPRESENTACIÓN NEUROFISIOLÓGICA</div>
+        <div style="height:36px;"><canvas id="neuroResult" style="width:100%;height:100%;display:block;"></canvas></div>
+      </div>
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px;">
+        <div class="result-panel-title">PROMOVER</div>
+        <div style="font-size:11px;color:var(--text2);" id="promoverText">Ejercicios de respiración y técnicas de relajación</div>
+      </div>
+      <button class="btn-sys btn-export" onclick="guardarResultados()" style="margin-top:8px;">GUARDAR RESULTADOS</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- .app -->
+
+<!-- ══ TUTORIAL MODAL ══ -->
+<div class="modal-overlay hidden" id="tutModal">
+<div class="modal-box">
+  <div class="modal-title">TUTORIAL — COGNILITH</div>
+  <!-- step 0 -->
+  <div class="tut-step active" id="tut0">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ COGNILITH ]</div>
+    <div class="tut-h">QUE ES COGNILITH?</div>
+    <div class="tut-p">Cognilith es un sistema de simulación cognitiva que analiza tu comportamiento mientras juegas para estimar tu nivel de <strong style="color:var(--cyan)">atención</strong>, <strong style="color:var(--red)">estrés</strong> y <strong style="color:var(--amber)">carga mental</strong> en tiempo real.</div>
+    <div class="tut-p">No usa sensores ni hardware especial — todo se mide a través de <strong style="color:var(--cyan)">cómo reaccionas</strong>: qué tan rápido haces clic, qué tan preciso eres y cómo mueves el cursor.</div>
+    <div class="tut-tip"><strong>Tu comportamiento = tu señal cognitiva.</strong> Cuanto más concentrado estés, mejor serán tus métricas.</div>
+  </div>
+  <!-- step 1 -->
+  <div class="tut-step" id="tut1">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ RETOS COGNITIVOS ]</div>
+    <div class="tut-h">LOS 5 RETOS DE SIMULACION</div>
+    <div class="tut-p"><strong style="color:var(--cyan)">CAPTURA DE ESTIMULOS:</strong> Aparecen orbes cian en el entorno. Haz clic antes de que desaparezcan. El anillo exterior indica el tiempo restante. Mide tu velocidad de reaccion.</div>
+    <div class="tut-p"><strong style="color:var(--green)">SECUENCIA DE MEMORIA:</strong> El sistema ilumina nodos en orden sobre una cuadricula 3x3. Repite el patron exacto haciendo clic. Mide memoria de trabajo.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">CONTROL INHIBITORIO:</strong> Aparecen estimulos verdes (CORRECTO) y rojos (INCORRECTO). Solo responde a los verdes. Si haces clic en el rojo, pierdes puntos. Mide control de impulsos.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">REFLEJO COGNITIVO:</strong> Entre seniales distractor aparece ocasionalmente el objetivo dorado (!). Solo ese suma puntos. Mide atencion selectiva.</div>
+    <div class="tut-p"><strong style="color:var(--purple)">SEGUIMIENTO VISUAL:</strong> Un estimulo se mueve por el entorno. Mantén el cursor encima el mayor tiempo posible. Mide atencion sostenida.</div>
+  </div>
+  <!-- step 2 -->
+  <div class="tut-step" id="tut2">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ METRICAS ]</div>
+    <div class="tut-h">COMO SE MIDEN TUS METRICAS</div>
+    <div class="tut-p"><strong style="color:var(--cyan)">Latencia:</strong> Tiempo entre que aparece el estímulo y tú reaccionas. Lenta = estrés o fatiga. Rápida = buena atención.</div>
+    <div class="tut-p"><strong style="color:var(--green)">Precisión:</strong> Porcentaje de aciertos sobre intentos totales. Alta precisión = control cognitivo.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">Navegación:</strong> Velocidad y cantidad de movimientos del cursor. Muchos movimientos erráticos = estrés o ansiedad.</div>
+    <div class="tut-tip">Los paneles laterales se actualizan en tiempo real. El encéfalo 3D ilumina las zonas activas: <span style="color:#ff3b3b">rojo = amígdala (estrés)</span>, <span style="color:#4488ff">azul = corteza prefrontal (atención)</span>.</div>
+  </div>
+  <!-- step 3 -->
+  <div class="tut-step" id="tut3">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ CONTEXTOS ]</div>
+    <div class="tut-h">LOS CONTEXTOS DE SIMULACION</div>
+    <div class="tut-p">Cada contexto ajusta la interpretacion cognitiva de tu desempeno. El sistema adapta el analisis segun el proposito declarado: no es lo mismo evaluar atencion para un examen academico que para operar maquinaria industrial.</div>
+    <div class="tut-p">CALMA Y FOCO — ENTREVISTA DE TRABAJO — OPERACION DE MAQUINARIA — EXAMEN DE CONDUCCION — EXAMEN ACADEMICO — ALTA CARGA Y ESTRES</div>
+    <div class="tut-tip">El contexto seleccionado queda registrado en el reporte final como estado emocional declarado por el usuario al inicio de la sesion.</div>
+  </div>
+  <!-- step 4 -->
+  <div class="tut-step" id="tut4">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ REPORTE ]</div>
+    <div class="tut-h">EL REPORTE FINAL</div>
+    <div class="tut-p">Al terminar la sesión verás un <strong style="color:var(--cyan)">dashboard completo</strong> con: eficiencia cognitiva global (0-100), mapa de activación cerebral, métricas detalladas de latencia/precisión/navegación, puntuación del juego, recomendaciones clínicas generadas automáticamente y opción de exportar el informe como archivo JSON.</div>
+    <div class="tut-tip">El reporte <strong>NO es un diagnóstico médico</strong>. Es una representación del desempeño conductual durante la sesión, como apoyo al análisis del profesional clínico.</div>
+  </div>
+  <!-- nav -->
+  <div class="tut-nav">
+    <div class="tut-dots" id="tutDots"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="tut-btn" id="tutBack" onclick="tutNav(-1)" style="display:none;">← ATRÁS</button>
+      <button class="tut-btn amber" id="tutNext" onclick="tutNav(1)">SIGUIENTE →</button>
+      <button class="tut-btn" id="tutSkip" onclick="closeTutorial()">SALTAR</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+const S = {
+  running:false, paused:false, time:0,
+  attention:50, stress:20, load:40,
+  latency:1.5, precision:75, nav:15,
+  difficulty:'media',
+  baseline:{attention:50,stress:20,load:40},
+  userName:'Usuario', sessionType:'Mindfulness',
+  scenario:'bosque',
+  timerInterval:null, animInterval:null,
+  history:{attention:[],stress:[],load:[],latency:[],precision:[]},
+};
+const G = {
+  active:false, gameIdx:0, score:0, hits:0, misses:0, totalTrials:0,
+  reactionTimes:[], lastSpawn:0, spawnInterval:1800,
+  targets:[], seqPattern:[], seqInput:[],
+  seqPhase:'show', seqIdx:0,
+  trackTarget:null, trackOnTarget:false, trackTime:0,
+  flashMsg:'', flashAlpha:0, flashX:0, flashY:0, flashColor:'#fff',
+  combo:0, gameIdx:0, countdownVal:0, countdownActive:false,
+  nextGameAt:0,
+};
+let _tid=0;
+
+// ════════════════════════════════════════════
+//  WEB AUDIO API — Motor de Sonido Adaptativo
+// ════════════════════════════════════════════
+const WA = {
+  ctx: null, enabled: true, ambientNode: null, ambientGain: null,
+  ambientOsc: null, ambientOsc2: null,
+  init(){
+    try{
+      this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    } catch(e){ this.enabled=false; }
+  },
+  resume(){ if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
+  // Tono de éxito — feedback positivo
+  hit(quality=1){
+    if(!this.ctx||!this.enabled) return;
+    this.resume();
+    const g=this.ctx.createGain(); g.connect(this.ctx.destination);
+    const o=this.ctx.createOscillator(); o.connect(g);
+    const now=this.ctx.currentTime;
+    const freq=quality>0.8?880:quality>0.5?660:440;
+    o.frequency.setValueAtTime(freq,now);
+    o.frequency.exponentialRampToValueAtTime(freq*1.5,now+0.08);
+    g.gain.setValueAtTime(0.18,now);
+    g.gain.exponentialRampToValueAtTime(0.001,now+0.28);
+    o.type='sine'; o.start(now); o.stop(now+0.3);
+  },
+  // Tono de error — feedback negativo
+  miss(){
+    if(!this.ctx||!this.enabled) return;
+    this.resume();
+    const g=this.ctx.createGain(); g.connect(this.ctx.destination);
+    const o=this.ctx.createOscillator(); o.connect(g);
+    const now=this.ctx.currentTime;
+    o.frequency.setValueAtTime(220,now);
+    o.frequency.exponentialRampToValueAtTime(110,now+0.18);
+    g.gain.setValueAtTime(0.14,now);
+    g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+    o.type='sawtooth'; o.start(now); o.stop(now+0.25);
+  },
+  // Sonido de countdown
+  beep(freq=440,dur=0.12){
+    if(!this.ctx||!this.enabled) return;
+    this.resume();
+    const g=this.ctx.createGain(); g.connect(this.ctx.destination);
+    const o=this.ctx.createOscillator(); o.connect(g);
+    const now=this.ctx.currentTime;
+    o.frequency.value=freq; o.type='square';
+    g.gain.setValueAtTime(0.12,now);
+    g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+    o.start(now); o.stop(now+dur+0.02);
+  },
+  // Ambiente musical adaptativo — cambia según estado cognitivo
+  startAmbient(){
+    if(!this.ctx||!this.enabled) return;
+    this.resume(); this.stopAmbient();
+    const now=this.ctx.currentTime;
+    this.ambientGain=this.ctx.createGain();
+    const filter=this.ctx.createBiquadFilter();
+    filter.type='lowpass'; filter.frequency.value=800;
+    this.ambientGain.connect(filter); filter.connect(this.ctx.destination);
+    // Base drone
+    this.ambientOsc=this.ctx.createOscillator();
+    this.ambientOsc.type='sine';
+    this.ambientOsc.frequency.value=55;
+    this.ambientOsc.connect(this.ambientGain);
+    this.ambientOsc.start(now);
+    // Harmonic layer
+    this.ambientOsc2=this.ctx.createOscillator();
+    this.ambientOsc2.type='triangle';
+    this.ambientOsc2.frequency.value=110;
+    this.ambientOsc2.connect(this.ambientGain);
+    this.ambientOsc2.start(now);
+    this.ambientGain.gain.setValueAtTime(0.04,now);
+  },
+  // Ajusta el ambiente según estado cognitivo (NVS Fase IV)
+  updateAmbient(stress, attention, load){
+    if(!this.ambientGain||!this.ambientOsc||!this.ctx) return;
+    const now=this.ctx.currentTime;
+    // Alta eficiencia → frecuencia más alta, volumen moderado
+    // Alta carga → frecuencia baja, volumen bajo
+    const freqBase = stress>65 ? 40 : attention>70&&stress<40 ? 70 : 55;
+    const vol = stress>65 ? 0.02 : attention>70&&stress<40 ? 0.05 : 0.035;
+    this.ambientOsc.frequency.setTargetAtTime(freqBase,now,1.5);
+    this.ambientOsc2.frequency.setTargetAtTime(freqBase*2,now,1.5);
+    this.ambientGain.gain.setTargetAtTime(vol,now,2.0);
+  },
+  stopAmbient(){
+    try{
+      if(this.ambientOsc){this.ambientOsc.stop();this.ambientOsc.disconnect();}
+      if(this.ambientOsc2){this.ambientOsc2.stop();this.ambientOsc2.disconnect();}
+      if(this.ambientGain) this.ambientGain.disconnect();
+    }catch(e){}
+    this.ambientOsc=null; this.ambientOsc2=null; this.ambientGain=null;
+  },
+  // Reto Auditivo — tono específico en ruido
+  playAuditoryTarget(targetFreq, noiseLevel){
+    if(!this.ctx||!this.enabled) return;
+    this.resume();
+    const now=this.ctx.currentTime;
+    // Noise buffer
+    const bufSz=this.ctx.sampleRate*.4;
+    const buf=this.ctx.createBuffer(1,bufSz,this.ctx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<bufSz;i++) data[i]=(Math.random()*2-1)*noiseLevel;
+    const noise=this.ctx.createBufferSource(); noise.buffer=buf;
+    const nf=this.ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=300; nf.Q.value=0.5;
+    noise.connect(nf); nf.connect(this.ctx.destination);
+    noise.start(now); noise.stop(now+0.4);
+    // Target tone (appears 150ms into noise)
+    const tg=this.ctx.createGain(); tg.connect(this.ctx.destination);
+    const to=this.ctx.createOscillator(); to.connect(tg);
+    to.frequency.value=targetFreq; to.type='sine';
+    tg.gain.setValueAtTime(0,now+0.15);
+    tg.gain.linearRampToValueAtTime(0.22,now+0.22);
+    tg.gain.linearRampToValueAtTime(0,now+0.38);
+    to.start(now+0.15); to.stop(now+0.42);
+  }
+};
+
+// ════════════════════════════════════════════
+//  MTC — Motor de Telemetría Conductual
+// ════════════════════════════════════════════
+const MTC = {
+  state: 'media', // 'eficiencia' | 'media' | 'carga'
+  highCount: 0, lowCount: 0, mediumHold: 0,
+  classify(attention, stress, load){
+    // Clasificación heurística según diagrama (cada 5s aprox via ciclo de 300ms → 16 ciclos ≈ 5s)
+    const highZone = [stress>65, load>65, attention<35];
+    const lowZone  = [attention>70, stress<40, load<50];
+    const nHigh = highZone.filter(Boolean).length;
+    const nLow  = lowZone.filter(Boolean).length;
+
+    if(nHigh>=2){ this.highCount++; this.lowCount=0; }
+    else if(nLow>=3){ this.lowCount++; this.highCount=0; }
+    else { this.mediumHold++; this.highCount=Math.max(0,this.highCount-1); this.lowCount=Math.max(0,this.lowCount-1); }
+
+    // Alta Carga si ≥2 vars en zona alta por ≥10 ciclos (≈30s)
+    if(this.highCount>=10) this.state='carga';
+    // Alta Eficiencia si 3 vars en zona baja por ≥5 ciclos
+    else if(this.lowCount>=5) this.state='eficiencia';
+    // Carga Media mantiene 5s (≈16 ciclos) antes de reclasificar
+    else if(this.mediumHold<16) this.state='media';
+
+    return this.state;
+  },
+  reset(){ this.state='media'; this.highCount=0; this.lowCount=0; this.mediumHold=0; }
+};
+
+// ════════════════════════════════════════════
+//  NVS — Neurofeedback Visual Simulado (Fase IV)
+// ════════════════════════════════════════════
+function updateNVS(mtcState){
+  const overlay=document.getElementById('nvsOverlay'); if(!overlay) return;
+  if(mtcState==='carga'){
+    // Alta Carga: luminosidad baja, saturación reducida, overlay rojizo suave
+    overlay.style.background='rgba(60,0,0,0.18)';
+    overlay.style.backdropFilter='brightness(0.82) saturate(0.65)';
+  } else if(mtcState==='eficiencia'){
+    // Alta Eficiencia: luminosidad alta, entorno vívido
+    overlay.style.background='rgba(0,30,20,0.04)';
+    overlay.style.backdropFilter='brightness(1.08) saturate(1.22)';
+  } else {
+    // Media: neutro
+    overlay.style.background='transparent';
+    overlay.style.backdropFilter='none';
+  }
+}
+
+// Semáforo cognitivo update
+function updateSemaforo(mtcState){
+  const lights={green:'sLightGreen',amber:'sLightAmber',red:'sLightRed'};
+  const labels={green:'sLblGreen',amber:'sLblAmber',red:'sLblRed'};
+  // Reset all
+  document.getElementById(lights.green).className='semaforo-light off';
+  document.getElementById(lights.amber).className='semaforo-light off';
+  document.getElementById(lights.red).className='semaforo-light off';
+  document.getElementById(labels.green).textContent='';
+  document.getElementById(labels.amber).textContent='';
+  document.getElementById(labels.red).textContent='';
+  const badge=document.getElementById('mtcBadge');
+  if(mtcState==='eficiencia'){
+    document.getElementById(lights.green).className='semaforo-light on-green';
+    document.getElementById(labels.green).textContent='●';
+    badge.textContent='ALTA EFICIENCIA COGNITIVA';
+    badge.className='mtc-badge mtc-eficiencia';
+  } else if(mtcState==='carga'){
+    document.getElementById(lights.red).className='semaforo-light on-red';
+    document.getElementById(labels.red).textContent='●';
+    badge.textContent='ALTA CARGA / ESTRÉS';
+    badge.className='mtc-badge mtc-carga';
+  } else {
+    document.getElementById(lights.amber).className='semaforo-light on-amber';
+    document.getElementById(labels.amber).textContent='●';
+    badge.textContent='CARGA MEDIA';
+    badge.className='mtc-badge mtc-media';
+  }
+}
+
+// Audio visualizer bars animation
+let _audioBarFrame=0;
+function animateAudioBars(){
+  const bars=document.querySelectorAll('.audio-bar');
+  if(!bars.length) return;
+  bars.forEach((b,i)=>{
+    const h=S.running ? 6+Math.abs(Math.sin(_audioBarFrame*.08+i*.9+S.attention*.02))*26 : 4+i%4*3;
+    b.style.height=h+'px';
+    b.className='audio-bar'+(S.running&&h>18?' active':'');
+  });
+  _audioBarFrame++;
+  requestAnimationFrame(animateAudioBars);
+}
+
+function toggleAudio(){
+  WA.enabled=!WA.enabled;
+  const btn=document.getElementById('audioToggle');
+  btn.textContent=WA.enabled?'ON':'OFF';
+  btn.className='audio-toggle'+(WA.enabled?' on':'');
+  if(!WA.ctx) WA.init();
+  if(WA.enabled&&S.running) WA.startAmbient();
+  else WA.stopAmbient();
+  notify(WA.enabled?'Audio activado.':'Audio desactivado.','info');
+}
+
+const GAMES=[
+  {id:'targets',  name:'Captura de Estímulos',  desc:'¡Clic en los orbes CIAN antes de que se agote el tiempo!',    color:'#00e5ff'},
+  {id:'sequence', name:'Secuencia de Memoria',   desc:'Memoriza el orden de los nodos y repítelo haciendo clic.',    color:'#44ff88'},
+  {id:'inhibit',  name:'Control Inhibitorio',    desc:'Clic en VERDE OK: — ignora el ROJO ✗ o pierdes puntos.',       color:'#ffaa00'},
+  {id:'reflex',   name:'Reflejo Cognitivo',      desc:'¡Solo el orbe DORADO (!) vale puntos! Ignora los rojos.',    color:'#ffdd00'},
+  {id:'track',    name:'Seguimiento Visual',     desc:'Mantén el cursor ENCIMA del orbe en movimiento.',            color:'#aa66ff'},
+];
+
+const SCENARIOS={
+  bosque:    {sky:['#010810','#030f1e','#051a2e'], fog:'rgba(0,50,80,',   ground:'#031420', tree:'rgba(0,220,255,',   part:[0,229,255]},
+  entrevista:{sky:['#050810','#0a1020','#101828'], fog:'rgba(10,30,70,',  ground:'#060e18', tree:'rgba(80,160,255,',  part:[68,136,255]},
+  maquinaria:{sky:['#050a05','#0a1505','#102010'], fog:'rgba(0,60,30,',   ground:'#041008', tree:'rgba(0,255,120,',   part:[0,220,100]},
+  conduccion:{sky:['#080810','#101020','#181830'], fog:'rgba(40,40,120,', ground:'#080812', tree:'rgba(120,100,255,', part:[100,80,255]},
+  examen:    {sky:['#080808','#101010','#181818'], fog:'rgba(80,80,80,',  ground:'#101010', tree:'rgba(160,160,255,', part:[140,100,255]},
+  estres:    {sky:['#100505','#200808','#300a0a'], fog:'rgba(120,30,30,', ground:'#180505', tree:'rgba(255,100,50,',  part:[255,80,50]},
+};
+
+// ════════════════════════════════════════════
+//  NAVIGATION & UTILS
+// ════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.phase-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+id).classList.add('active');
+  if(id==='results') renderResults();
+}
+function notify(msg,type='info'){
+  const n=document.getElementById('notif');
+  n.textContent=msg; n.className='notif show '+(type==='danger'?'danger':type==='warn'?'warn':'');
+  setTimeout(()=>n.classList.remove('show'),3500);
+}
+
+// ════════════════════════════════════════════
+//  TUTORIAL
+// ════════════════════════════════════════════
+let tutStep=0; const TUT_TOTAL=5;
+function openTutorial(){
+  tutStep=0; renderTut();
+  document.getElementById('tutModal').classList.remove('hidden');
+}
+function closeTutorial(){document.getElementById('tutModal').classList.add('hidden');}
+function tutNav(d){
+  tutStep=Math.max(0,Math.min(TUT_TOTAL-1,tutStep+d));
+  renderTut();
+  if(tutStep===TUT_TOTAL-1&&d===1) closeTutorial();
+}
+function renderTut(){
+  for(let i=0;i<TUT_TOTAL;i++){
+    const el=document.getElementById('tut'+i);
+    if(el) el.classList.toggle('active',i===tutStep);
+  }
+  document.getElementById('tutBack').style.display=tutStep>0?'':'none';
+  document.getElementById('tutNext').textContent=tutStep>=TUT_TOTAL-1?'¡ENTENDIDO! OK:':'SIGUIENTE →';
+  // dots
+  const dots=document.getElementById('tutDots');
+  dots.innerHTML=Array.from({length:TUT_TOTAL},(_,i)=>`<div class="tut-dot${i===tutStep?' active':''}"></div>`).join('');
+}
+
+// ════════════════════════════════════════════
+//  SCENARIO
+// ════════════════════════════════════════════
+function selectScenario(card,id){
+  document.querySelectorAll('.sc-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  S.scenario=id;
+}
+// ════════════════════════════════════════════
+//  CALIBRATION
+// ════════════════════════════════════════════
+function updateCalib(){
+  document.getElementById('sensVisVal').textContent=document.getElementById('sensVis').value;
+  document.getElementById('respBaseVal').textContent=document.getElementById('respBase').value+'ms';
+  document.getElementById('umbralVal').textContent=document.getElementById('umbral').value;
+}
+function startCalibration(){
+  const btn=document.getElementById('calibBtn');
+  btn.textContent='CALIBRANDO...'; btn.style.color='var(--amber)'; btn.style.borderColor='var(--amber)';
+  S.userName=document.getElementById('userName').value||'Usuario';
+  S.sessionType=document.getElementById('sessionType').value;
+  const sv=parseInt(document.getElementById('sensVis').value);
+  const steps=['Analizando línea base...','Registrando latencia base...','Calculando umbrales...',''];
+  let t=0;
+  const iv=setInterval(()=>{
+    btn.textContent=steps[t]||'CALIBRACIÓN COMPLETA OK:';
+    if(t>=steps.length){
+      clearInterval(iv);
+      S.baseline.attention=40+sv*3; S.baseline.stress=20; S.baseline.load=35+sv*2;
+      S.attention=S.baseline.attention; S.stress=S.baseline.stress; S.load=S.baseline.load;
+      const setB=(id,v,c)=>{const el=document.getElementById(id);el.textContent=v;el.style.color=c;};
+      setB('baseAt',S.baseline.attention,'var(--cyan)');
+      setB('baseEs',S.baseline.stress,'var(--green)');
+      setB('baseCg',S.baseline.load,'var(--amber)');
+      btn.textContent='CONTINUAR → VER TUTORIAL'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)';
+      btn.onclick=()=>{ openTutorial(); btn.textContent='IR AL JUEGO →'; btn.onclick=goToGame; };
+      notify('Calibración completada. Línea base registrada.','info');
+    }
+    t++;
+  },650);
+}
+function goToGame(){
+  showScreen('game');
+  document.getElementById('btn-game').classList.add('done');
+}
+
+// ════════════════════════════════════════════
+//  GAME CONTROL
+// ════════════════════════════════════════════
+function iniciarSesion(){
+  if(S.running) return;
+  if(!WA.ctx) WA.init();
+  WA.resume();
+  S.running=true; S.paused=false; S.time=0;
+  G.active=false; G.score=0; G.hits=0; G.misses=0; G.totalTrials=0;
+  G.reactionTimes=[]; G.targets=[]; G.combo=0; G.gameIdx=0; G.countdownActive=false;
+  G.trackTarget=null; G.trackTime=0;
+  MTC.reset();
+  document.getElementById('statusText').textContent='SESIÓN ACTIVA';
+  document.getElementById('statusDot').className='status-dot';
+  document.getElementById('audioVisualizer').style.display='block';
+  if(WA.enabled) WA.startAmbient();
+  startTimer(); startSimulation(); startMinigameLoop();
+  launchCountdown(GAMES[0]);
+  notify('Sesión iniciada. ¡Juego adaptativo activo!');
+}
+function pausarSesion(){
+  if(!S.running) return;
+  S.paused=!S.paused;
+  document.getElementById('btnPausar').textContent=S.paused?'REANUDAR':'PAUSAR';
+  document.getElementById('statusText').textContent=S.paused?'PAUSA':'SESIÓN ACTIVA';
+  if(!S.paused) notify('Sesión reanudada.');
+}
+function toggleGame(){
+  if(!S.running){iniciarSesion();return;}
+  pausarSesion();
+  document.getElementById('playBtn').textContent=S.paused?'CONTINUAR SIMULACION':'PAUSAR SIMULACION';
+}
+function exportarReporte(){
+  notify('Exportando reporte...','info');
+  showScreen('results'); renderResults();
+}
+function guardarResultados(){notify('Resultados guardados.','info');}
+
+// ════════════════════════════════════════════
+//  TIMER
+// ════════════════════════════════════════════
+function startTimer(){
+  if(S.timerInterval) clearInterval(S.timerInterval);
+  S.timerInterval=setInterval(()=>{
+    if(!S.paused) S.time++;
+    const m=String(Math.floor(S.time/60)).padStart(2,'0'), sc=String(S.time%60).padStart(2,'0');
+    document.getElementById('gameTimer').textContent=m+':'+sc;
+    document.getElementById('timerDisplay').textContent=m+':'+sc;
+    if(S.running&&!S.paused&&S.time>0&&S.time%35===0){
+      G.active=false; G.targets=[];
+      G.gameIdx=(G.gameIdx+1)%GAMES.length;
+      launchCountdown(GAMES[G.gameIdx]);
+    }
+  },1000);
+}
+
+// ════════════════════════════════════════════
+//  MINIGAME ENGINE
+// ════════════════════════════════════════════
+function launchCountdown(game){
+  G.countdownActive=true; G.countdownVal=3;
+  document.getElementById('challengeText').textContent=game.name+' — '+game.desc;
+  const iv=setInterval(()=>{
+    G.countdownVal--;
+    WA.beep(G.countdownVal>0?330:880, G.countdownVal>0?0.1:0.2);
+    if(G.countdownVal<=0){clearInterval(iv);G.countdownActive=false;startMiniGame(game);}
+  },700);
+}
+function startMiniGame(game){
+  G.active=true; G.targets=[]; G.seqPattern=[]; G.seqInput=[];
+  G.seqPhase='show'; G.seqIdx=0; G.trackTarget=null; G.trackTime=0; G.trackOnTarget=false;
+  G.lastSpawn=performance.now();
+  const diff=S.difficulty==='alta'?1.4:S.difficulty==='baja'?0.7:1.0;
+  G.spawnInterval=Math.max(500,1800/diff);
+  if(game.id==='sequence') buildSequence();
+  if(game.id==='track') spawnTrackTarget();
+}
+function seqGrid(){
+  const c=document.getElementById('scene3d');
+  const w=c.width||600, h=c.height||400;
+  const gw=w*.52, gh=h*.50, ox=(w-gw)/2, oy=(h-gh)/2+15;
+  return Array.from({length:9},(_,i)=>({x:ox+((i%3)+.5)*(gw/3),y:oy+(Math.floor(i/3)+.5)*(gh/3)}));
+}
+function buildSequence(){
+  const len=S.difficulty==='alta'?6:S.difficulty==='baja'?3:4;
+  G.seqPattern=Array.from({length:len},()=>Math.floor(Math.random()*9));
+  G.seqPhase='show'; G.seqIdx=0; G.seqInput=[];
+  showNextSeqNode();
+}
+function showNextSeqNode(){
+  if(G.seqIdx>=G.seqPattern.length){G.seqPhase='input';G.seqIdx=0;return;}
+  const c=seqGrid()[G.seqPattern[G.seqIdx]];
+  G.targets=[{x:c.x,y:c.y,r:22,born:performance.now(),ttl:600,type:'seq-show',id:_tid++,hit:false}];
+  G.seqIdx++;
+  setTimeout(()=>{G.targets=[];setTimeout(showNextSeqNode,250);},560);
+}
+function spawnTrackTarget(){
+  const c=document.getElementById('scene3d'), w=c.width||600, h=c.height||400;
+  const spd=S.difficulty==='alta'?2.4:S.difficulty==='baja'?1.0:1.6;
+  G.trackTarget={x:w/2,y:h/2,vx:(Math.random()-.5)*spd*2,vy:(Math.random()-.5)*spd*2,r:20};
+}
+function spawnTarget(game){
+  const c=document.getElementById('scene3d'), w=c.width||600, h=c.height||400;
+  const mg=60, x=mg+Math.random()*(w-mg*2), y=mg+Math.random()*(h-mg*2-50);
+  const diff=S.difficulty; const ttl=diff==='alta'?850:diff==='baja'?2200:1500;
+  const r=diff==='alta'?15:diff==='baja'?28:21;
+  if(game.id==='targets') G.targets.push({x,y,r,born:performance.now(),ttl,type:'cyan',id:_tid++,hit:false});
+  else if(game.id==='reflex'){
+    const gold=Math.random()<.28;
+    G.targets.push({x,y,r,born:performance.now(),ttl:gold?950:ttl,type:gold?'gold':'decoy',id:_tid++,hit:false});
+  } else if(game.id==='inhibit'){
+    const good=Math.random()<.5;
+    G.targets.push({x,y,r,born:performance.now(),ttl,type:good?'good':'bad',id:_tid++,hit:false});
+  }
+}
+function startMinigameLoop(){
+  const canvas=document.getElementById('scene3d');
+  canvas.style.cursor='crosshair';
+  canvas.onclick=handleClick;
+  canvas.onmousemove=handleMove;
+}
+function handleClick(e){
+  if(!S.running||S.paused||!G.active) return;
+  const rect=e.target.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(e.target.width/rect.width);
+  const my=(e.clientY-rect.top)*(e.target.height/rect.height);
+  const now=performance.now(); const game=GAMES[G.gameIdx];
+  if(game.id==='targets'||game.id==='reflex'){
+    let hit=false;
+    G.targets.forEach(t=>{
+      if(t.hit) return;
+      const dx=mx-t.x,dy=my-t.y;
+      if(Math.sqrt(dx*dx+dy*dy)<t.r+10){
+        t.hit=true; hit=true;
+        const rt=now-t.born; G.reactionTimes.push(rt); G.totalTrials++;
+        if((game.id==='targets'&&t.type==='cyan')||(game.id==='reflex'&&t.type==='gold')){
+          G.hits++; G.combo++;
+          const pts=Math.max(10,Math.round(450/Math.max(180,rt)*10))*(G.combo>2?2:1);
+          G.score+=pts; showFlash('+'+pts+(G.combo>2?' COMBO x2':''),mx,my,'#00ff88'); applyHit(rt,true);
+          WA.hit(1-rt/2000);
+        } else {
+          G.misses++; G.combo=0; G.score=Math.max(0,G.score-40); showFlash('MISS -40',mx,my,'#ff3b3b'); applyHit(1800,false);
+          WA.miss();
+        }
+      }
+    });
+    if(!hit){G.misses++;G.combo=0;G.totalTrials++;applyHit(2000,false);showFlash('MISS',mx,my,'rgba(255,59,59,.7)');}
+  } else if(game.id==='inhibit'){
+    G.targets.forEach(t=>{
+      if(t.hit) return;
+      const dx=mx-t.x,dy=my-t.y;
+      if(Math.sqrt(dx*dx+dy*dy)<t.r+10){
+        t.hit=true; G.totalTrials++;
+        if(t.type==='good'){G.hits++;G.combo++;G.score+=80*(G.combo>2?2:1);showFlash('+80',mx,my,'#00ff88');applyHit(500,true);WA.hit(0.8);}
+        else{G.misses++;G.combo=0;G.score=Math.max(0,G.score-60);showFlash('DISTRACTOR! -60',mx,my,'#ff3b3b');applyHit(2000,false);WA.miss();}
+      }
+    });
+  } else if(game.id==='sequence'&&G.seqPhase==='input'){
+    const grid=seqGrid();
+    grid.forEach((c,i)=>{
+      const dx=mx-c.x,dy=my-c.y;
+      if(Math.sqrt(dx*dx+dy*dy)<26){
+        G.seqInput.push(i); G.totalTrials++;
+        const ok=G.seqInput[G.seqInput.length-1]===G.seqPattern[G.seqInput.length-1];
+        if(ok){
+          G.hits++;G.combo++;
+          G.targets=[{x:c.x,y:c.y,r:22,born:now,ttl:400,type:'seq-correct',id:_tid++,hit:false}];
+          showFlash('OK:',mx,my,'#44ff88'); WA.hit(0.9);
+          if(G.seqInput.length===G.seqPattern.length){
+            const pts=200+G.seqPattern.length*20;G.score+=pts;
+            showFlash('¡SECUENCIA! +'+pts,mx,my,'#44ff88');
+            applyHit(350,true); WA.beep(880,0.2); setTimeout(()=>buildSequence(),800);
+          } else applyHit(500,true);
+        } else {
+          G.misses++;G.combo=0;G.score=Math.max(0,G.score-30);
+          G.targets=[{x:c.x,y:c.y,r:22,born:now,ttl:400,type:'seq-wrong',id:_tid++,hit:false}];
+          showFlash('✗ -30',mx,my,'#ff3b3b'); WA.miss(); applyHit(2000,false);
+          setTimeout(()=>buildSequence(),900);
+        }
+      }
+    });
+  }
+}
+function handleMove(e){
+  if(!S.running||S.paused) return;
+  const rect=e.target.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(e.target.width/rect.width);
+  const my=(e.clientY-rect.top)*(e.target.height/rect.height);
+  if(G.trackTarget){const dx=mx-G.trackTarget.x,dy=my-G.trackTarget.y;G.trackOnTarget=Math.sqrt(dx*dx+dy*dy)<G.trackTarget.r+14;}
+  S.nav=Math.min(99,Math.round(10+(Math.abs(e.movementX)+Math.abs(e.movementY))*.4+S.stress*.12));
+}
+function applyHit(rt,ok){
+  const n=Math.min(1,rt/2000);
+  if(ok){S.attention=Math.min(95,S.attention+2.5-n*1.8);S.stress=Math.max(5,S.stress-1.8);S.load=Math.max(10,S.load-1.2);}
+  else{S.attention=Math.max(5,S.attention-3.5);S.stress=Math.min(95,S.stress+3.5+n*2.5);S.load=Math.min(90,S.load+2.5);}
+  S.latency=+(0.35+n*1.9+Math.random()*.12).toFixed(2);
+  S.precision=G.totalTrials>0?Math.round((G.hits/G.totalTrials)*100):75;
+}
+function showFlash(txt,x,y,color){G.flashMsg=txt;G.flashAlpha=1;G.flashX=x;G.flashY=y;G.flashColor=color||'#fff';}
+
+// ════════════════════════════════════════════
+//  SIMULATION LOOP
+// ════════════════════════════════════════════
+function startSimulation(){
+  if(S.animInterval) clearInterval(S.animInterval);
+  S.animInterval=setInterval(()=>{
+    if(!S.running||S.paused) return;
+    S.attention=Math.max(5,Math.min(95,S.attention+(Math.random()-.52)*1.2));
+    S.stress=Math.max(5,Math.min(95,S.stress+(Math.random()-.48)*1.0));
+    S.load=Math.max(10,Math.min(90,S.load+(Math.random()-.50)*.8));
+    const game=GAMES[G.gameIdx]; const now=performance.now();
+    if(G.active&&(game.id==='targets'||game.id==='reflex'||game.id==='inhibit')){
+      if(now-G.lastSpawn>G.spawnInterval){G.lastSpawn=now;spawnTarget(game);}
+      G.targets=G.targets.filter(t=>{
+        if(!t.hit&&now-t.born>t.ttl){
+          if(game.id!=='inhibit'||t.type==='good'){G.misses++;G.combo=0;G.totalTrials++;applyHit(2000,false);}
+          return false;
+        }
+        return!(t.hit&&now-t.born>t.ttl+350);
+      });
+    }
+    if(G.active&&game.id==='track'&&G.trackTarget){
+      const c=document.getElementById('scene3d'),w=c.width||600,h=c.height||400;
+      G.trackTarget.x+=G.trackTarget.vx; G.trackTarget.y+=G.trackTarget.vy;
+      if(G.trackTarget.x<45||G.trackTarget.x>w-45) G.trackTarget.vx*=-1;
+      if(G.trackTarget.y<45||G.trackTarget.y>h-45) G.trackTarget.vy*=-1;
+      if(G.trackOnTarget){G.trackTime++;G.score+=2;S.attention=Math.min(95,S.attention+.25);S.stress=Math.max(5,S.stress-.15);}
+      else{S.attention=Math.max(5,S.attention-.3);}
+      S.precision=G.totalTrials>0?Math.round((G.hits/Math.max(1,G.totalTrials))*100):Math.round(G.trackOnTarget?72:38);
+    }
+    if(S.attention>70&&S.stress<40) S.difficulty='alta';
+    else if(S.stress>70||S.attention<30) S.difficulty='baja';
+    else S.difficulty='media';
+    G.spawnInterval=Math.max(480,S.difficulty==='alta'?1200:S.difficulty==='baja'?2400:1800);
+    ['attention','stress','load','latency','precision'].forEach(k=>{
+      S.history[k].push(S[k]); if(S.history[k].length>300) S.history[k].shift();
+    });
+    // MTC classify every ~5s (16 cycles * 300ms ≈ 4.8s)
+    const mtcState=MTC.classify(S.attention,S.stress,S.load);
+    updateSemaforo(mtcState);
+    updateNVS(mtcState);
+    if(WA.ambientGain) WA.updateAmbient(S.stress,S.attention,S.load);
+    updateUI(); updateAlerts();
+  },300);
+}
+
+// ════════════════════════════════════════════
+//  UI UPDATE
+// ════════════════════════════════════════════
+function updateUI(){
+  const a=Math.round(S.attention),e=Math.round(S.stress),c=Math.round(S.load);
+  setM('At',a,a>60?'low':a>35?'mid':'high',a);
+  setM('Es',e,e<40?'low':e<65?'mid':'high',e);
+  setM('Cg',c,c<50?'low':c<70?'mid':'high',c);
+  const rl=document.getElementById('rtLat'); rl.textContent=S.latency.toFixed(1)+'s'; rl.style.color=S.latency>2?'var(--red)':S.latency>1.5?'var(--amber)':'var(--green)';
+  const rp=document.getElementById('rtPrec'); rp.textContent=Math.round(S.precision)+'%'; rp.style.color=S.precision<50?'var(--red)':S.precision<70?'var(--amber)':'var(--green)';
+  const rn=document.getElementById('rtNav'); rn.textContent=S.nav+' mov'; rn.style.color=S.nav>30?'var(--red)':S.nav>20?'var(--amber)':'var(--green)';
+  const db=document.getElementById('diffBadge'); db.textContent='DIFICULTAD: '+S.difficulty.toUpperCase(); db.className='diff-badge '+(S.difficulty==='alta'?'diff-high':S.difficulty==='baja'?'diff-low':'diff-mid');
+  document.getElementById('bordeBadge').textContent=S.running?'ACTIVO':'STANDBY';
+  document.getElementById('playBtn').textContent=S.paused?'CONTINUAR SIMULACION':'PAUSAR SIMULACION';
+  document.getElementById('scorePanel').textContent=G.score.toLocaleString();
+  document.getElementById('comboPanel').textContent=G.combo>2?'COMBO x'+(G.combo>5?'3':G.combo>3?'2':'2'):'';
+  if(S.running&&!G.countdownActive) document.getElementById('challengeText').textContent=GAMES[G.gameIdx].desc;
+}
+function setM(id,val,cls,pct){
+  const v=document.getElementById('met'+id), b=document.getElementById('bar'+id);
+  v.textContent=val; v.className='metric-val '+cls; b.style.width=pct+'%';
+}
+function updateAlerts(){
+  const alerts=[];
+  if(S.stress>65) alerts.push({type:'danger',icon:'ALERTA:',text:'Signos de incremento en estrés detectados'});
+  if(S.load>68)   alerts.push({type:'warn',icon:'ALERTA:',text:'Indicadores de carga mental alta'});
+  if(S.attention<35) alerts.push({type:'warn',icon:'ALERTA:',text:'Patrones de atención inconsistente'});
+  if(G.combo>3)   alerts.push({type:'info',icon:'OK:',text:'¡Combo activo — alta eficiencia cognitiva!'});
+  if(S.precision>78&&S.stress<40) alerts.push({type:'info',icon:'OK:',text:'Estado cognitivo óptimo — buen desempeño'});
+  if(alerts.length===0) alerts.push({type:'info',icon:'ℹ',text:'Sistema monitoreando en tiempo real...'});
+  document.getElementById('alertasList').innerHTML=alerts.slice(0,3).map(a=>`<div class="alert-box ${a.type}"><span class="alert-text">${a.icon} ${a.text}</span></div>`).join('');
+}
+
+// ════════════════════════════════════════════
+//  CANVAS — 6 ESCENARIOS INMERSIVOS ÚNICOS
+// ════════════════════════════════════════════
+function initScene(){
+  const canvas=document.getElementById('scene3d');
+  const ctx=canvas.getContext('2d');
+  let frame=0;
+  function resize(){
+    const p=canvas.parentElement;
+    canvas.width=p.offsetWidth||600; canvas.height=p.offsetHeight||380;
+  }
+  setTimeout(resize,120); window.addEventListener('resize',resize);
+
+  // ── SCENARIO: BOSQUE (Calma y Foco) ──
+  function drawBosque(w,h,stN,atN){
+    // Cielo nocturno con degradado verde/azul
+    const sg=ctx.createLinearGradient(0,0,0,h*.55);
+    sg.addColorStop(0,'#020c08'); sg.addColorStop(.6,'#041510'); sg.addColorStop(1,'#061e12');
+    ctx.fillStyle=sg; ctx.fillRect(0,0,w,h*.55);
+    // Estrellas
+    for(let i=0;i<40;i++){
+      const sx=((i*317+19)%100)/100*w, sy=((i*151+11)%100)/100*h*.48;
+      const bk=Math.sin(frame*.035+i*.8)*.35+.45;
+      ctx.beginPath(); ctx.arc(sx,sy,i%7===0?1.6:.7,0,Math.PI*2);
+      ctx.fillStyle=`rgba(180,255,200,${bk*.75})`; ctx.fill();
+    }
+    // Luna con halo verde
+    ctx.beginPath(); ctx.arc(w*.15,h*.12,14,0,Math.PI*2);
+    const lunag=ctx.createRadialGradient(w*.15,h*.12,0,w*.15,h*.12,22);
+    lunag.addColorStop(0,'rgba(200,255,220,.8)'); lunag.addColorStop(.6,'rgba(100,200,150,.2)'); lunag.addColorStop(1,'transparent');
+    ctx.fillStyle=lunag; ctx.fill();
+    // Montañas en silueta
+    ctx.beginPath(); ctx.moveTo(0,h*.55);
+    [[0,.88],[.07,.65],[.15,.75],[.22,.55],[.30,.70],[.40,.52],[.50,.67],[.60,.50],[.70,.63],[.80,.54],[.90,.68],[1,.72],[1,1],[0,1]].forEach(([mx,my])=>ctx.lineTo(mx*w,my*h*.55+(1-my)*h*.55*.1));
+    ctx.closePath(); ctx.fillStyle='#020c08'; ctx.fill();
+    // Suelo con hierba
+    const gg=ctx.createLinearGradient(0,h*.55,0,h);
+    gg.addColorStop(0,'#051a0a'); gg.addColorStop(1,'#020d05');
+    ctx.fillStyle=gg; ctx.fillRect(0,h*.55,w,h);
+    // Bruma
+    const fg=ctx.createLinearGradient(0,h*.52,0,h*.62);
+    fg.addColorStop(0,'transparent'); fg.addColorStop(.5,`rgba(0,80,40,${0.22+stN*.15})`); fg.addColorStop(1,'transparent');
+    ctx.fillStyle=fg; ctx.fillRect(0,h*.52,w,h*.12);
+    // Árboles silueta
+    function dTree(x,by,th,tw,al){
+      ctx.fillStyle=`rgba(1,10,5,${al})`; ctx.fillRect(x-tw/2,by-th*.4,tw,th*.4);
+      for(let l=0;l<4;l++){
+        const ly=by-th*.3-(th*.68)*l/4,lw=th*.55*(1-l*.18),lh=th*.28;
+        ctx.beginPath(); ctx.moveTo(x,ly-lh); ctx.lineTo(x-lw,ly); ctx.lineTo(x+lw,ly); ctx.closePath();
+        ctx.fillStyle=`rgba(2,12,6,${al})`; ctx.fill();
+        const gv=Math.sin(frame*.022+x*.012)*.18+.28;
+        ctx.strokeStyle=`rgba(0,200,80,${gv*al*.85})`; ctx.lineWidth=.9; ctx.stroke();
+      }
+    }
+    [[.05,.12,.19,.28],[.68,.76,.84,.92,.99]].forEach((row,ri)=>row.forEach((tx,i)=>dTree(tx*w,h*.56+4,h*(ri?.25:.22)+i%3*h*.04,5,.45)));
+    [[.02,.14,.24],[.66,.78,.88,.97]].forEach((row,ri)=>row.forEach((tx,i)=>dTree(tx*w,h*.57+6,h*(ri?.40:.36)+i%3*h*.05,9,.68)));
+    [[0,.10,.20],[.75,.85,.93,1.0]].forEach((row,ri)=>row.forEach((tx,i)=>dTree(tx*w,h*.95,h*(.65+i%2*.05),14,1.0)));
+    // Luciérnagas
+    for(let i=0;i<28;i++){
+      const t2=frame*.009+i*.52;
+      const px=((i*191+Math.sin(t2)*55+frame*.22)%w+w)%w;
+      const py=h*.58+(h*.4)*((i*113)%100)/100+Math.sin(t2*1.3)*8;
+      const bk=Math.sin(frame*.07+i*2.1)*.45+.3;
+      ctx.beginPath(); ctx.arc(px,py,i%5===0?2.2:1.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,255,120,${bk*.85})`; ctx.fill();
+      if(i%4===0){const pg=ctx.createRadialGradient(px,py,0,px,py,9);pg.addColorStop(0,`rgba(0,255,100,${bk*.3})`);pg.addColorStop(1,'transparent');ctx.fillStyle=pg;ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();}
+    }
+  }
+
+  // ── SCENARIO: CONDUCCIÓN ──
+  function drawConduccion(w,h,stN,atN){
+    // Cielo nocturno de autopista
+    const sg=ctx.createLinearGradient(0,0,0,h*.42);
+    sg.addColorStop(0,'#04050f'); sg.addColorStop(.7,'#080918'); sg.addColorStop(1,'#0d0d22');
+    ctx.fillStyle=sg; ctx.fillRect(0,0,w,h*.42);
+    // Estrellas tenues
+    for(let i=0;i<20;i++){
+      const sx=((i*283+7)%100)/100*w, sy=((i*127+3)%100)/100*h*.38;
+      ctx.beginPath(); ctx.arc(sx,sy,.8,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,210,255,${Math.sin(frame*.05+i)*.3+.35})`; ctx.fill();
+    }
+    // Cielo de ciudad lejana (glow naranja)
+    const cityG=ctx.createRadialGradient(w*.5,h*.42,0,w*.5,h*.42,w*.55);
+    cityG.addColorStop(0,`rgba(255,150,30,${0.08+stN*.04})`); cityG.addColorStop(1,'transparent');
+    ctx.fillStyle=cityG; ctx.fillRect(0,0,w,h*.42);
+    // Asfalto
+    const road=ctx.createLinearGradient(0,h*.42,0,h);
+    road.addColorStop(0,'#141420'); road.addColorStop(.4,'#1a1a2e'); road.addColorStop(1,'#0e0e1a');
+    ctx.fillStyle=road; ctx.fillRect(0,h*.42,w,h);
+    // Perspectiva de carretera — bordes blancos
+    const vx=w/2, vy=h*.44;
+    // Carril izquierdo
+    ctx.beginPath(); ctx.moveTo(vx-w*.003,vy); ctx.lineTo(w*.04,h);
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=2.5; ctx.stroke();
+    // Carril derecho
+    ctx.beginPath(); ctx.moveTo(vx+w*.003,vy); ctx.lineTo(w*.96,h);
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=2.5; ctx.stroke();
+    // Línea central discontinua animada
+    const dashOff=(frame*3.5)%80;
+    for(let d=0;d<12;d++){
+      const t=d/12; const t2=(d+1)/12;
+      const x1=vx+(w*.5-vx)*t, y1=vy+(h-vy)*t;
+      const x2=vx+(w*.5-vx)*t2, y2=vy+(h-vy)*t2;
+      const dashProg=((d*80+dashOff)%120)/120;
+      if(dashProg<0.55){
+        const wl=(y1-vy)/(h-vy)*3+1;
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+        ctx.strokeStyle=`rgba(255,220,80,${0.6+atN*.2})`; ctx.lineWidth=wl; ctx.stroke();
+      }
+    }
+    // Edificios/postes en horizonte
+    for(let b=0;b<14;b++){
+      const bx=(b/14)*w, bw=w*.025+b%3*w*.01;
+      const bh=h*.04+b%4*h*.025;
+      const ba=(b%3===0)?0.35:0.2;
+      ctx.fillStyle=`rgba(8,8,20,${ba+0.1})`;
+      ctx.fillRect(bx-bw/2, h*.42-bh, bw, bh);
+      // Ventanas
+      for(let r=0;r<Math.floor(bh/8);r++){
+        for(let c2=0;c2<2;c2++){
+          if(Math.random()>0.5){
+            const wx=bx-bw/2+c2*(bw*.45)+2, wy=h*.42-bh+r*8+2;
+            ctx.fillStyle=`rgba(255,200,80,${Math.sin(frame*.02+b+r)>.7?0.6:0.15})`;
+            ctx.fillRect(wx,wy,bw*.3,5);
+          }
+        }
+      }
+    }
+    // Postes de luz laterales
+    for(let p=0;p<6;p++){
+      const progress=(p/6+frame*.006)%1;
+      const px2=vx+(w*.92-vx)*progress; const py2=h*.44+(h*.56)*progress;
+      const postH=h*.12*(0.3+progress*.7);
+      // Poste
+      ctx.beginPath(); ctx.moveTo(px2,py2); ctx.lineTo(px2,py2-postH);
+      ctx.strokeStyle=`rgba(180,180,180,${progress*.5})`; ctx.lineWidth=1.2*(progress+.3); ctx.stroke();
+      // Luz del poste
+      const lpg=ctx.createRadialGradient(px2,py2-postH,0,px2,py2-postH,postH*.4);
+      lpg.addColorStop(0,`rgba(255,200,60,${progress*.45})`); lpg.addColorStop(1,'transparent');
+      ctx.fillStyle=lpg; ctx.fillRect(px2-postH*.4,py2-postH*1.4,postH*.8,postH*.4);
+      // Poste lado derecho (espejo)
+      const px3=w-(px2-vx)*1.1+vx*.1;
+      ctx.beginPath(); ctx.moveTo(px3,py2); ctx.lineTo(px3,py2-postH);
+      ctx.strokeStyle=`rgba(180,180,180,${progress*.5})`; ctx.lineWidth=1.2*(progress+.3); ctx.stroke();
+      const lpg2=ctx.createRadialGradient(px3,py2-postH,0,px3,py2-postH,postH*.4);
+      lpg2.addColorStop(0,`rgba(255,200,60,${progress*.45})`); lpg2.addColorStop(1,'transparent');
+      ctx.fillStyle=lpg2; ctx.fillRect(px3-postH*.4,py2-postH*1.4,postH*.8,postH*.4);
+    }
+    // Dashboard del auto (parte inferior)
+    const dashH=h*.14;
+    const dashG=ctx.createLinearGradient(0,h-dashH,0,h);
+    dashG.addColorStop(0,'rgba(10,10,20,0)'); dashG.addColorStop(.3,'rgba(8,8,18,.92)'); dashG.addColorStop(1,'rgba(5,5,14,1)');
+    ctx.fillStyle=dashG; ctx.fillRect(0,h-dashH,w,dashH);
+    // Volante
+    const vWx=w*.5, vWy=h-.02*h; const vWr=h*.065;
+    ctx.beginPath(); ctx.arc(vWx,vWy,vWr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(60,70,90,.85)'; ctx.lineWidth=5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(vWx,vWy-vWr*.85); ctx.lineTo(vWx,vWy+vWr*.85);
+    ctx.strokeStyle='rgba(50,60,80,.7)'; ctx.lineWidth=3; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(vWx-vWr*.85,vWy); ctx.lineTo(vWx+vWr*.85,vWy);
+    ctx.stroke();
+    // Velocímetro
+    ctx.beginPath(); ctx.arc(w*.2,h-.01*h,h*.038,Math.PI*.7,Math.PI*2.3);
+    ctx.strokeStyle='rgba(0,180,220,.5)'; ctx.lineWidth=2.5; ctx.stroke();
+    const speed=60+Math.round(atN*80+stN*20);
+    const ang=Math.PI*.7+(speed/200)*Math.PI*1.6;
+    ctx.beginPath(); ctx.moveTo(w*.2,h-.01*h);
+    ctx.lineTo(w*.2+Math.cos(ang)*h*.03,h-.01*h+Math.sin(ang)*h*.03);
+    ctx.strokeStyle='rgba(255,100,80,.8)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.font=`bold ${Math.round(h*.025)}px Orbitron,monospace`; ctx.textAlign='center'; ctx.fillStyle='rgba(0,200,220,.7)';
+    ctx.fillText(speed,w*.2,h+.015*h);
+    // Espejo retrovisor
+    ctx.beginPath(); ctx.roundRect(w*.38,h-dashH+h*.02,w*.24,h*.06,3);
+    const mirrorG=ctx.createLinearGradient(w*.38,0,w*.62,0);
+    mirrorG.addColorStop(0,'rgba(20,20,40,.7)'); mirrorG.addColorStop(.5,'rgba(30,30,55,.85)'); mirrorG.addColorStop(1,'rgba(20,20,40,.7)');
+    ctx.fillStyle=mirrorG; ctx.fill();
+    ctx.strokeStyle='rgba(80,90,120,.5)'; ctx.lineWidth=1; ctx.stroke();
+    // Glow velocidad en estrés
+    if(stN>0.6){
+      const alertG=ctx.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,w*.3);
+      alertG.addColorStop(0,`rgba(255,50,30,${(stN-.6)*0.12})`); alertG.addColorStop(1,'transparent');
+      ctx.fillStyle=alertG; ctx.fillRect(0,0,w,h);
+    }
+  }
+
+  // ── SCENARIO: MAQUINARIA INDUSTRIAL ──
+  function drawMaquinaria(w,h,stN,atN){
+    // Fondo industrial oscuro
+    ctx.fillStyle='#030805'; ctx.fillRect(0,0,w,h);
+    // Techo de fábrica
+    const roofG=ctx.createLinearGradient(0,0,0,h*.25);
+    roofG.addColorStop(0,'#040d08'); roofG.addColorStop(1,'#050f0a');
+    ctx.fillStyle=roofG; ctx.fillRect(0,0,w,h*.25);
+    // Vigas del techo
+    for(let b=0;b<5;b++){
+      const bx=b*w*.22+w*.02;
+      ctx.fillStyle='rgba(8,20,12,.9)'; ctx.fillRect(bx,0,w*.04,h*.22);
+      ctx.strokeStyle='rgba(0,150,80,.15)'; ctx.lineWidth=1;
+      ctx.strokeRect(bx,0,w*.04,h*.22);
+    }
+    // Suelo de fábrica con grid
+    const floorG=ctx.createLinearGradient(0,h*.6,0,h);
+    floorG.addColorStop(0,'#040e08'); floorG.addColorStop(1,'#020a05');
+    ctx.fillStyle=floorG; ctx.fillRect(0,h*.6,w,h);
+    ctx.strokeStyle='rgba(0,100,50,.12)'; ctx.lineWidth=.7;
+    for(let gx=0;gx<w;gx+=w*.08){ctx.beginPath();ctx.moveTo(gx,h*.6);ctx.lineTo(gx,h);ctx.stroke();}
+    for(let gy=h*.6;gy<h;gy+=h*.1){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
+    // Máquina central — cilindros y pistones
+    const mx=w*.5, my=h*.5;
+    // Cuerpo principal
+    ctx.fillStyle='rgba(5,18,10,.95)'; ctx.fillRect(mx-w*.18,my-h*.22,w*.36,h*.44);
+    ctx.strokeStyle=`rgba(0,200,100,${0.3+atN*.2})`; ctx.lineWidth=1.5;
+    ctx.strokeRect(mx-w*.18,my-h*.22,w*.36,h*.44);
+    // Pistones animados
+    for(let p=0;p<4;p++){
+      const px2=mx-w*.16+p*w*.1;
+      const pistonY=my-h*.1+Math.sin(frame*.06+p*Math.PI*.5)*h*.05;
+      ctx.fillStyle=`rgba(0,180,80,.6)`; ctx.fillRect(px2-4,my-h*.2,8,h*.3);
+      ctx.fillStyle=`rgba(0,220,100,.8)`; ctx.fillRect(px2-6,pistonY-6,12,14);
+      ctx.strokeStyle=`rgba(0,255,120,${0.4+atN*.3})`; ctx.lineWidth=1; ctx.strokeRect(px2-6,pistonY-6,12,14);
+    }
+    // Panel de control izquierdo
+    ctx.fillStyle='rgba(3,12,7,.92)'; ctx.fillRect(w*.06,h*.3,w*.2,h*.4);
+    ctx.strokeStyle='rgba(0,160,80,.3)'; ctx.lineWidth=1; ctx.strokeRect(w*.06,h*.3,w*.2,h*.4);
+    // Indicadores del panel
+    [[.09,.35,'rgba(0,255,100,.7)',`${Math.round(50+atN*50)}%`,'EFIC.'],[.09,.45,'rgba(255,150,0,.7)',`${Math.round(30+stN*60)} PSI`,'PRES.'],[.09,.55,'rgba(0,200,255,.7)',`${Math.round(200+atN*800)} RPM`,'VELOC.']].forEach(([px,py,col,val,lbl])=>{
+      ctx.fillStyle=col; ctx.font=`bold ${Math.round(w*.018)}px Orbitron,monospace`;
+      ctx.textAlign='left'; ctx.fillText(val,px*w,py*h);
+      ctx.fillStyle='rgba(100,180,120,.5)'; ctx.font=`${Math.round(w*.012)}px Rajdhani,sans-serif`;
+      ctx.fillText(lbl,px*w,py*h+h*.028);
+      // Mini barra
+      ctx.fillStyle='rgba(0,80,40,.4)'; ctx.fillRect(px*w,py*h+h*.034,w*.1,5);
+      ctx.fillStyle=col; ctx.fillRect(px*w,py*h+h*.034,w*.1*parseFloat(val)/100||w*.05,5);
+    });
+    // Panel derecho — pantalla de datos
+    ctx.fillStyle='rgba(3,12,7,.92)'; ctx.fillRect(w*.74,h*.3,w*.2,h*.4);
+    ctx.strokeStyle='rgba(0,160,80,.3)'; ctx.lineWidth=1; ctx.strokeRect(w*.74,h*.3,w*.2,h*.4);
+    // Onda de estado en pantalla
+    ctx.beginPath(); ctx.strokeStyle=`rgba(0,230,110,${0.5+atN*.3})`; ctx.lineWidth=1.5;
+    for(let x=0;x<w*.18;x++){
+      const t=x/(w*.18)*Math.PI*4+frame*.04;
+      const y=h*.5+Math.sin(t)*h*.04*atN+Math.sin(t*2.2)*h*.015*stN;
+      x===0?ctx.moveTo(w*.75+x,y):ctx.lineTo(w*.75+x,y);
+    }
+    ctx.stroke();
+    // Chispas/partículas industriales
+    for(let i=0;i<15;i++){
+      const sp=frame*.015+i*.8;
+      const spx=mx-w*.1+Math.sin(sp)*w*.18+((frame*1.2+i*17)%w);
+      const spy=my-h*.3+((i*37+frame*.8)%(h*.6));
+      if(spx<0||spx>w) continue;
+      ctx.beginPath(); ctx.arc(spx,spy,1,0,Math.PI*2);
+      ctx.fillStyle=`rgba(100,255,150,${Math.random()*.4+.1})`; ctx.fill();
+    }
+    // Luz de advertencia
+    const warnPulse=Math.sin(frame*.08)*.5+.5;
+    if(stN>0.55){
+      ctx.beginPath(); ctx.arc(w*.5,h*.12,h*.04,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,100,0,${warnPulse*stN*.5})`; ctx.fill();
+      ctx.strokeStyle=`rgba(255,140,0,${warnPulse*stN})`; ctx.lineWidth=2; ctx.stroke();
+      ctx.font=`bold ${Math.round(h*.022)}px Orbitron,monospace`; ctx.textAlign='center';
+      ctx.fillStyle=`rgba(255,180,0,${warnPulse})`; ctx.fillText('⚠ ALERTA',w*.5,h*.12+h*.012);
+    }
+  }
+
+  // ── SCENARIO: ENTREVISTA DE TRABAJO ──
+  function drawEntrevista(w,h,stN,atN){
+    // Oficina moderna con luz cálida
+    ctx.fillStyle='#080610'; ctx.fillRect(0,0,w,h);
+    // Pared del fondo
+    const wallG=ctx.createLinearGradient(0,0,0,h*.65);
+    wallG.addColorStop(0,'#0c0a18'); wallG.addColorStop(1,'#100d20');
+    ctx.fillStyle=wallG; ctx.fillRect(0,0,w,h*.65);
+    // Ventana grande con vista de ciudad
+    ctx.fillStyle='rgba(8,12,30,.9)'; ctx.fillRect(w*.15,h*.04,w*.7,h*.45);
+    ctx.strokeStyle='rgba(80,70,120,.4)'; ctx.lineWidth=2; ctx.strokeRect(w*.15,h*.04,w*.7,h*.45);
+    // Marco de ventana
+    ctx.strokeStyle='rgba(60,55,90,.6)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(w*.5,h*.04); ctx.lineTo(w*.5,h*.49); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*.15,h*.265); ctx.lineTo(w*.85,h*.265); ctx.stroke();
+    // Ciudad en la ventana
+    for(let b=0;b<22;b++){
+      const bx=(b/22)*w*.65+w*.16;
+      const bh=h*.05+b%5*h*.05+Math.sin(b)*.03*h;
+      const bw=w*.022+b%3*w*.008;
+      ctx.fillStyle=`rgba(20,18,40,${0.7+b%3*.1})`;
+      ctx.fillRect(bx,h*.49-bh,bw,bh);
+      // Ventanas iluminadas
+      for(let r=0;r<Math.floor(bh/7);r++){
+        for(let c2=0;c2<2;c2++){
+          const lit=((b*7+r*3+c2)%5)<2;
+          if(lit) ctx.fillStyle=`rgba(255,200,100,${0.15+Math.sin(frame*.01+b+r)*.08})`;
+          else ctx.fillStyle='rgba(10,10,25,.6)';
+          ctx.fillRect(bx+c2*(bw*.45)+1,h*.49-bh+r*7+2,bw*.35,4);
+        }
+      }
+    }
+    // Cielo nocturno en ventana
+    for(let i=0;i<12;i++){
+      const sx=w*.16+((i*211)%100)/100*w*.68, sy=h*.05+((i*139)%100)/100*h*.2;
+      ctx.beginPath(); ctx.arc(sx,sy,.7,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,190,255,${Math.sin(frame*.04+i)*.2+.3})`; ctx.fill();
+    }
+    // Suelo / alfombra
+    const floorG=ctx.createLinearGradient(0,h*.65,0,h);
+    floorG.addColorStop(0,'#0a0818'); floorG.addColorStop(1,'#070512');
+    ctx.fillStyle=floorG; ctx.fillRect(0,h*.65,w,h);
+    // Mesa de entrevista
+    ctx.fillStyle='rgba(20,15,40,.95)'; ctx.fillRect(w*.12,h*.6,w*.76,h*.08);
+    ctx.strokeStyle='rgba(100,80,160,.3)'; ctx.lineWidth=1.5; ctx.strokeRect(w*.12,h*.6,w*.76,h*.08);
+    // Silla del entrevistador (contorno)
+    ctx.strokeStyle='rgba(80,60,140,.4)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(w*.36,h*.38,w*.28,h*.24,5); ctx.stroke();
+    // Figura del entrevistador (silueta)
+    const ent_y=h*.39; const ent_x=w*.5;
+    // Cuerpo
+    ctx.fillStyle='rgba(12,10,25,.9)';
+    ctx.beginPath(); ctx.ellipse(ent_x,ent_y+h*.12,w*.07,h*.1,0,0,Math.PI*2); ctx.fill();
+    // Cabeza
+    ctx.beginPath(); ctx.arc(ent_x,ent_y,h*.038,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(150,120,220,.3)'; ctx.lineWidth=1; ctx.stroke();
+    // Laptop sobre la mesa
+    ctx.fillStyle='rgba(8,6,20,.9)'; ctx.fillRect(w*.24,h*.56,w*.2,h*.055);
+    ctx.fillStyle=`rgba(60,180,255,${0.08+atN*.06})`; ctx.fillRect(w*.245,h*.563,w*.19,h*.045);
+    ctx.strokeStyle='rgba(80,160,220,.25)'; ctx.lineWidth=1; ctx.strokeRect(w*.24,h*.56,w*.2,h*.055);
+    // Documentos sobre la mesa
+    ctx.fillStyle='rgba(240,235,255,.06)'; ctx.fillRect(w*.58,h*.61,w*.08,h*.05);
+    ctx.fillStyle='rgba(240,235,255,.04)'; ctx.fillRect(w*.59,h*.615,w*.08,h*.045);
+    // Luz de oficina (spot)
+    const spotG=ctx.createRadialGradient(w*.5,0,0,w*.5,0,h*.7);
+    spotG.addColorStop(0,`rgba(120,100,200,${0.06+atN*.04})`); spotG.addColorStop(.6,`rgba(80,60,150,${0.02})`); spotG.addColorStop(1,'transparent');
+    ctx.fillStyle=spotG; ctx.fillRect(0,0,w,h);
+    // Tensión visual si estrés alto
+    if(stN>0.5){
+      const tensG=ctx.createRadialGradient(w*.5,h*.5,h*.2,w*.5,h*.5,w*.6);
+      tensG.addColorStop(0,'transparent'); tensG.addColorStop(1,`rgba(80,30,100,${(stN-.5)*.18})`);
+      ctx.fillStyle=tensG; ctx.fillRect(0,0,w,h);
+    }
+  }
+
+  // ── SCENARIO: EXAMEN ACADÉMICO ──
+  function drawExamen(w,h,stN,atN){
+    // Aula con luz fluorescente
+    ctx.fillStyle='#070810'; ctx.fillRect(0,0,w,h);
+    // Pared del fondo (pizarrón grande)
+    ctx.fillStyle='#060d0e'; ctx.fillRect(0,0,w,h*.55);
+    // Pizarrón
+    const boardG=ctx.createLinearGradient(0,h*.05,0,h*.5);
+    boardG.addColorStop(0,'#041214'); boardG.addColorStop(1,'#061618');
+    ctx.fillStyle=boardG; ctx.fillRect(w*.08,h*.04,w*.84,h*.42);
+    ctx.strokeStyle='rgba(0,140,160,.35)'; ctx.lineWidth=2; ctx.strokeRect(w*.08,h*.04,w*.84,h*.42);
+    // Texto en la pizarra — ecuaciones / anotaciones
+    ctx.fillStyle='rgba(160,220,225,.55)';
+    ctx.font=`${Math.round(h*.028)}px Share Tech Mono, monospace`; ctx.textAlign='left';
+    const lines=['∫ f(x)dx = F(b) - F(a)','σ = √(Σ(x-μ)²/N)','E = mc²  →  p = mv',`T: ${String(Math.floor(S.time/60)).padStart(2,'0')}:${String(S.time%60).padStart(2,'0')}`];
+    lines.forEach((l,i)=>ctx.fillText(l,w*.12,h*.12+i*h*.08));
+    // Fórmulas borrosas en el fondo de la pizarra
+    ctx.fillStyle='rgba(100,170,180,.12)';
+    ctx.font=`${Math.round(h*.014)}px Share Tech Mono, monospace`;
+    ['2x+3y=15','∇²φ=ρ/ε₀','Σai=n(a1+an)/2','lim(x→∞)1/x=0'].forEach((f,i)=>ctx.fillText(f,w*.55+i%2*w*.18,h*.14+Math.floor(i/2)*h*.1));
+    // Maestro — silueta
+    const tch_x=w*.5, tch_y=h*.38;
+    // Cuerpo del maestro
+    ctx.fillStyle='rgba(5,14,16,.88)';
+    ctx.beginPath(); ctx.ellipse(tch_x,tch_y+h*.08,w*.055,h*.09,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(tch_x,tch_y,h*.035,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(0,180,200,.2)'; ctx.lineWidth=1; ctx.stroke();
+    // Brazo señalando la pizarra
+    ctx.beginPath(); ctx.moveTo(tch_x-w*.055,tch_y+h*.04);
+    ctx.lineTo(tch_x-w*.18,tch_y-h*.04);
+    ctx.strokeStyle='rgba(5,14,16,.88)'; ctx.lineWidth=8; ctx.stroke();
+    ctx.strokeStyle='rgba(0,160,180,.2)'; ctx.lineWidth=1; ctx.stroke();
+    // Suelo del aula
+    const fG=ctx.createLinearGradient(0,h*.55,0,h);
+    fG.addColorStop(0,'#080a12'); fG.addColorStop(1,'#060810');
+    ctx.fillStyle=fG; ctx.fillRect(0,h*.55,w,h);
+    // Filas de pupitres
+    for(let row=0;row<2;row++){
+      for(let col=0;col<5;col++){
+        const dx=w*.1+col*w*.18, dy=h*.6+row*h*.16;
+        ctx.fillStyle='rgba(10,14,22,.95)'; ctx.fillRect(dx,dy,w*.14,h*.07);
+        ctx.strokeStyle='rgba(60,80,120,.3)'; ctx.lineWidth=1; ctx.strokeRect(dx,dy,w*.14,h*.07);
+        // Hoja en el pupitre
+        ctx.fillStyle=`rgba(220,225,240,${0.04+atN*.03})`; ctx.fillRect(dx+2,dy+2,w*.1,h*.05);
+        // Líneas de la hoja
+        for(let l=0;l<3;l++){ctx.fillStyle='rgba(100,120,180,.1)';ctx.fillRect(dx+3,dy+4+l*h*.014,w*.09,1);}
+      }
+    }
+    // Luz fluorescente parpadeando bajo estrés
+    const flickerAmt=stN>0.6?Math.sin(frame*.18)*.07:0;
+    const lightG=ctx.createLinearGradient(0,0,0,h*.3);
+    lightG.addColorStop(0,`rgba(180,210,220,${0.04+atN*.03-flickerAmt})`);
+    lightG.addColorStop(1,'transparent');
+    ctx.fillStyle=lightG; ctx.fillRect(0,0,w,h*.3);
+    // Reloj en la pared
+    const cx2=w*.9, cy2=h*.09, cr=h*.05;
+    ctx.beginPath(); ctx.arc(cx2,cy2,cr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,160,180,.35)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='rgba(5,14,18,.8)'; ctx.fill();
+    const secA=(S.time%60)/60*Math.PI*2-Math.PI/2;
+    const minA=((S.time/60)%60)/60*Math.PI*2-Math.PI/2;
+    ctx.beginPath(); ctx.moveTo(cx2,cy2); ctx.lineTo(cx2+Math.cos(secA)*cr*.8,cy2+Math.sin(secA)*cr*.8);
+    ctx.strokeStyle=`rgba(0,220,200,${0.5+stN*.3})`; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx2,cy2); ctx.lineTo(cx2+Math.cos(minA)*cr*.65,cy2+Math.sin(minA)*cr*.65);
+    ctx.strokeStyle='rgba(180,200,220,.5)'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  // ── SCENARIO: ESTRÉS / ALTA CARGA ──
+  function drawEstres(w,h,stN,atN){
+    // Fondo caótico rojo/oscuro
+    const bg=ctx.createLinearGradient(0,0,w,h);
+    bg.addColorStop(0,'#0f0505'); bg.addColorStop(.5,'#150808'); bg.addColorStop(1,'#0d0404');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+    // Venas de energía — líneas caóticas de fondo
+    for(let v=0;v<8;v++){
+      ctx.beginPath();
+      ctx.moveTo(((v*173+frame*.4)%w),0);
+      let vx=((v*173+frame*.4)%w), vy=0;
+      while(vy<h){vx+=(Math.sin(vy*.02+v+frame*.01)*20);vy+=15;ctx.lineTo(vx,vy);}
+      ctx.strokeStyle=`rgba(180,30,30,${0.04+stN*.04})`; ctx.lineWidth=.8; ctx.stroke();
+    }
+    // Edificios en llamas — silueta ciudad en caos
+    for(let b=0;b<16;b++){
+      const bx=(b/16)*w; const bh=h*.15+b%5*h*.1;const bw=w*.05+b%3*w*.02;
+      ctx.fillStyle=`rgba(10,2,2,.95)`;
+      ctx.fillRect(bx,h*.6-bh,bw,bh+h*.4);
+      // Ventanas rojas
+      for(let r=0;r<Math.floor(bh/10);r++){
+        for(let c2=0;c2<2;c2++){
+          const brightness=Math.sin(frame*.05+b+r+c2)*.4+.4;
+          ctx.fillStyle=`rgba(255,80,20,${brightness*.25})`;
+          ctx.fillRect(bx+c2*(bw*.45)+2,h*.6-bh+r*10+3,bw*.35,6);
+        }
+      }
+    }
+    // Llamas en la base
+    for(let f2=0;f2<20;f2++){
+      const fx=(f2/20)*w+Math.sin(frame*.04+f2)*w*.02;
+      const fy=h*.62; const fh=h*.08+Math.sin(frame*.08+f2*1.3)*.06*h;
+      const fG=ctx.createLinearGradient(fx,fy,fx,fy-fh);
+      fG.addColorStop(0,`rgba(255,80,0,${0.3+stN*.25})`);
+      fG.addColorStop(.5,`rgba(255,160,0,${0.2+stN*.15})`);
+      fG.addColorStop(1,'transparent');
+      ctx.fillStyle=fG;
+      ctx.beginPath(); ctx.ellipse(fx,fy,fh*.3,fh,0,0,Math.PI*2); ctx.fill();
+    }
+    // Cielo rojo tormentoso
+    const skyG=ctx.createLinearGradient(0,0,0,h*.6);
+    skyG.addColorStop(0,'#100404'); skyG.addColorStop(.5,`rgba(40,10,10,${0.4+stN*.3})`); skyG.addColorStop(1,'transparent');
+    ctx.fillStyle=skyG; ctx.fillRect(0,0,w,h*.6);
+    // Relámpagos
+    if(frame%55<4){
+      ctx.strokeStyle=`rgba(255,180,80,${0.7+Math.random()*.2})`; ctx.lineWidth=1.8;
+      const lx=w*.15+Math.random()*w*.7;
+      ctx.beginPath(); ctx.moveTo(lx,0);
+      let lxc=lx,lyc=0;
+      while(lyc<h*.55){lxc+=(Math.random()-.5)*35;lyc+=18;ctx.lineTo(lxc,lyc);}
+      ctx.stroke();
+      // Glow del rayo
+      ctx.strokeStyle=`rgba(255,200,100,${0.15})`; ctx.lineWidth=8; ctx.stroke();
+    }
+    // Partículas caóticas
+    for(let p=0;p<30;p++){
+      const t2=frame*.012+p*.37;
+      const px2=((p*157+Math.sin(t2)*40+frame*.55)%w+w)%w;
+      const py2=((p*83+frame*.3+Math.cos(t2)*20)%h+h)%h;
+      const bk=Math.sin(frame*.1+p*1.7)*.4+.35;
+      ctx.beginPath(); ctx.arc(px2,py2,p%5===0?2.5:1.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,${50+p%3*60},20,${bk*.75})`; ctx.fill();
+    }
+    // Viñetado de alerta
+    const vigG=ctx.createRadialGradient(w/2,h/2,h*.1,w/2,h/2,w*.7);
+    vigG.addColorStop(0,'transparent'); vigG.addColorStop(1,`rgba(120,0,0,${0.3+stN*.25})`);
+    ctx.fillStyle=vigG; ctx.fillRect(0,0,w,h);
+  }
+
+  // ── SCENARIO: CALMA (bosque original mejorado) ──
+  // ya es drawBosque
+
+  function draw(){
+    const w=canvas.width,h=canvas.height;
+    if(w<10||h<10){frame++;requestAnimationFrame(draw);return;}
+    const stN=S.running?S.stress/100:.15;
+    const atN=S.running?S.attention/100:.6;
+
+    // Dispatcher por escenario
+    if(S.scenario==='conduccion') drawConduccion(w,h,stN,atN);
+    else if(S.scenario==='maquinaria') drawMaquinaria(w,h,stN,atN);
+    else if(S.scenario==='entrevista') drawEntrevista(w,h,stN,atN);
+    else if(S.scenario==='examen') drawExamen(w,h,stN,atN);
+    else if(S.scenario==='estres') drawEstres(w,h,stN,atN);
+    else drawBosque(w,h,stN,atN); // bosque + mindfulness
+
+    // Color de acento del escenario para HUD
+    const accentMap={conduccion:'255,200,80',maquinaria:'0,220,100',entrevista:'160,120,240',examen:'0,200,220',estres:'255,80,40',bosque:'0,230,110'};
+    const ac=accentMap[S.scenario]||'0,229,255';
+
+    // ── GAME OVERLAY ──
+    if(S.running&&!S.paused){
+      const game=GAMES[G.gameIdx]; const now=performance.now();
+
+      // COUNTDOWN
+      if(G.countdownActive&&G.countdownVal>0){
+        ctx.save(); ctx.font='bold '+Math.round(h*.17)+'px Orbitron,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle=`rgba(${ac},.9)`;
+        ctx.shadowColor=`rgba(${ac},.7)`; ctx.shadowBlur=28;
+        ctx.fillText(G.countdownVal,w/2,h/2); ctx.shadowBlur=0; ctx.restore();
+        // Game name
+        ctx.save(); ctx.font='bold 14px Orbitron,monospace'; ctx.textAlign='center';
+        ctx.fillStyle=`rgba(${ac},.8)`; ctx.fillText('— '+game.name.toUpperCase()+' —',w/2,h/2+h*.14); ctx.restore();
+      }
+
+      // SEQUENCE GRID
+      if(G.active&&game.id==='sequence'){
+        const grid=seqGrid(); const inp=G.seqPhase==='input';
+        grid.forEach((c,i)=>{
+          ctx.beginPath(); ctx.arc(c.x,c.y,20,0,Math.PI*2);
+          ctx.fillStyle=inp?'rgba(0,180,255,.14)':'rgba(0,100,150,.08)'; ctx.fill();
+          ctx.strokeStyle=inp?'rgba(0,220,255,.65)':'rgba(0,150,200,.25)'; ctx.lineWidth=1.5; ctx.stroke();
+          if(inp){ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(0,200,255,.55)';ctx.fillText(i+1,c.x,c.y);}
+        });
+        ctx.font='bold 12px Rajdhani,sans-serif'; ctx.textAlign='center';
+        ctx.fillStyle=inp?'rgba(255,210,0,.9)':'rgba(0,220,255,.8)';
+        ctx.fillText(inp?`REPITE: ${G.seqInput.length}/${G.seqPattern.length}`:'MEMORIZA LA SECUENCIA...',w/2,h-82);
+      }
+
+      // TRACK TARGET
+      if(G.active&&game.id==='track'&&G.trackTarget){
+        const t=G.trackTarget,on=G.trackOnTarget,pulse=Math.sin(now*.009)*.25+.75;
+        ctx.beginPath(); ctx.arc(t.x,t.y,t.r+9,0,Math.PI*2);
+        ctx.strokeStyle=on?`rgba(0,255,136,${pulse})`:`rgba(170,136,255,${pulse*.65})`; ctx.lineWidth=2; ctx.stroke();
+        const tg=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,t.r);
+        tg.addColorStop(0,on?'rgba(0,255,136,.6)':'rgba(160,120,255,.4)'); tg.addColorStop(1,'transparent');
+        ctx.fillStyle=tg; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle=on?'rgba(0,255,136,.8)':'rgba(190,160,255,.65)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(t.x-t.r*1.6,t.y);ctx.lineTo(t.x+t.r*1.6,t.y);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(t.x,t.y-t.r*1.6);ctx.lineTo(t.x,t.y+t.r*1.6);ctx.stroke();
+        const tp=Math.min(1,G.trackTime/200);
+        ctx.fillStyle='rgba(0,0,0,.38)'; ctx.fillRect(w/2-75,h-72,150,7);
+        ctx.fillStyle=on?'rgba(0,255,136,.75)':'rgba(80,80,80,.38)'; ctx.fillRect(w/2-75,h-72,150*tp,7);
+        ctx.font='10px Rajdhani,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='rgba(200,220,255,.7)';
+        ctx.fillText('TIEMPO EN FOCO: '+Math.round(tp*100)+'%',w/2,h-56);
+      }
+
+      // TARGETS
+      G.targets.forEach(t=>{
+        const age=(now-t.born)/t.ttl, life=1-age;
+        if(life<=0&&!t.hit) return;
+        let cr,cg3,cb,gStr;
+        if(t.type==='cyan'||t.type==='seq-show'){cr=0;cg3=229;cb=255;gStr='0,229,255';}
+        else if(t.type==='gold'){cr=255;cg3=220;cb=0;gStr='255,220,0';}
+        else if(t.type==='decoy'){cr=255;cg3=60;cb=60;gStr='255,60,60';}
+        else if(t.type==='good'){cr=0;cg3=255;cb=100;gStr='0,255,100';}
+        else if(t.type==='bad'){cr=255;cg3=50;cb=50;gStr='255,50,50';}
+        else if(t.type==='seq-correct'){cr=68;cg3=255;cb=100;gStr='68,255,100';}
+        else if(t.type==='seq-wrong'){cr=255;cg3=60;cb=60;gStr='255,60,60';}
+        else{cr=100;cg3=200;cb=255;gStr='100,200,255';}
+
+        if(t.hit){
+          const boom=Math.min(1,(now-t.born-t.ttl*.0)/320);
+          for(let p=0;p<8;p++){
+            const pa=(p/8)*Math.PI*2,pr2=boom*t.r*2.8;
+            ctx.beginPath(); ctx.arc(t.x+Math.cos(pa)*pr2,t.y+Math.sin(pa)*pr2,2.4*(1-boom),0,Math.PI*2);
+            ctx.fillStyle=`rgba(${cr},${cg3},${cb},${(1-boom)*.85})`; ctx.fill();
+          }
+          return;
+        }
+        // TTL arc
+        ctx.beginPath(); ctx.arc(t.x,t.y,t.r+5,0,Math.PI*2*life);
+        ctx.strokeStyle=`rgba(${gStr},.45)`; ctx.lineWidth=2; ctx.stroke();
+        // Glow
+        const glg=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,t.r*1.75);
+        glg.addColorStop(0,`rgba(${gStr},${life*.3})`); glg.addColorStop(1,'transparent');
+        ctx.fillStyle=glg; ctx.beginPath(); ctx.arc(t.x,t.y,t.r*1.75,0,Math.PI*2); ctx.fill();
+        // Core
+        const cg4=ctx.createRadialGradient(t.x-t.r*.28,t.y-t.r*.28,0,t.x,t.y,t.r);
+        cg4.addColorStop(0,`rgba(255,255,255,${life*.88})`);
+        cg4.addColorStop(.3,`rgba(${cr},${cg3},${cb},${life*.82})`);
+        cg4.addColorStop(1,`rgba(${Math.round(cr*.35)},${Math.round(cg3*.35)},${Math.round(cb*.35)},${life*.35})`);
+        ctx.fillStyle=cg4; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill();
+        // Labels
+        if(t.type==='good'||t.type==='bad'){
+          ctx.font=`bold ${Math.round(t.r*.82)}px Orbitron,monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillStyle=`rgba(255,255,255,${life*.9})`; ctx.fillText(t.type==='good'?'OK:':'✗',t.x,t.y);
+        }
+        if(t.type==='gold'){
+          ctx.font=`bold ${Math.round(t.r*.78)}px Orbitron,monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillStyle=`rgba(255,250,180,${life*.9})`; ctx.fillText('!',t.x,t.y);
+        }
+      });
+
+      // FLASH
+      if(G.flashAlpha>0){
+        ctx.save(); ctx.font='bold 17px Orbitron,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle=G.flashColor||'#fff'; ctx.globalAlpha=G.flashAlpha;
+        ctx.fillText(G.flashMsg,G.flashX,G.flashY-22); ctx.globalAlpha=1; ctx.restore();
+        G.flashAlpha=Math.max(0,G.flashAlpha-.038);
+      }
+
+      // SCORE HUD (top center of canvas)
+      ctx.save(); ctx.font='bold 13px Orbitron,monospace'; ctx.textAlign='center';
+      ctx.fillStyle='rgba(255,170,0,.85)';
+      ctx.fillText('PUNTOS: '+G.score+(G.combo>2?' COMBO x'+(G.combo>5?3:2):''),w/2,20);
+      ctx.restore();
+    }
+
+    frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ════════════════════════════════════════════
+//  BRAIN CANVAS
+// ════════════════════════════════════════════
+function initBrain(canvasId,size){
+  const canvas=document.getElementById(canvasId); if(!canvas) return;
+  canvas.width=size||180; canvas.height=(size||140);
+  const ctx=canvas.getContext('2d'); let frame=0;
+  function brainPath(cx,cy,rx,ry){
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-ry*.95);
+    ctx.bezierCurveTo(cx+rx*.55,cy-ry*1.05,cx+rx*1.05,cy-ry*.6,cx+rx,cy-ry*.05);
+    ctx.bezierCurveTo(cx+rx*1.05,cy+ry*.45,cx+rx*.7,cy+ry*.85,cx+rx*.15,cy+ry*.9);
+    ctx.bezierCurveTo(cx+rx*.05,cy+ry,cx-rx*.05,cy+ry,cx-rx*.15,cy+ry*.9);
+    ctx.bezierCurveTo(cx-rx*.7,cy+ry*.85,cx-rx*1.05,cy+ry*.45,cx-rx,cy-ry*.05);
+    ctx.bezierCurveTo(cx-rx*1.05,cy-ry*.6,cx-rx*.55,cy-ry*1.05,cx,cy-ry*.95);
+    ctx.closePath();
+  }
+  function drawB(){
+    const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+4,rx=w*.43,ry=h*.42;
+    ctx.clearRect(0,0,w,h);
+    const st=S.running?S.stress/100:.2, at=S.running?S.attention/100:.5, ld=S.running?S.load/100:.4;
+    // halo
+    const hR=st>.6?'255,60,60':at>.6?'50,150,255':'0,160,200';
+    const hA=.05+Math.sin(frame*.06)*.025;
+    const hG=ctx.createRadialGradient(cx,cy,rx*.5,cx,cy,rx*1.4);
+    hG.addColorStop(0,`rgba(${hR},0)`); hG.addColorStop(.7,`rgba(${hR},${hA})`); hG.addColorStop(1,'transparent');
+    ctx.fillStyle=hG; ctx.fillRect(0,0,w,h);
+    // fill
+    brainPath(cx,cy,rx,ry); ctx.fillStyle='rgba(4,18,32,.95)'; ctx.fill();
+    // zones
+    [[cx,cy-ry*.52,rx*.35+at*rx*.2,60,140,255,at],[cx+rx*.12,cy+ry*.14,rx*.28+st*rx*.18,255,55,55,st],[cx+rx*.2,cy-ry*.1,rx*.24+ld*rx*.15,255,165,0,ld]].forEach(([zx,zy,zr,r,g,b,v])=>{
+      const p=Math.sin(frame*(.08+v*.04)+r*.01)*.28+.72;
+      const zg=ctx.createRadialGradient(zx,zy,0,zx,zy,zr);
+      zg.addColorStop(0,`rgba(${r},${g},${b},${v*p*.82})`); zg.addColorStop(.55,`rgba(${r},${g},${b},${v*p*.3})`); zg.addColorStop(1,'transparent');
+      ctx.fillStyle=zg; ctx.beginPath(); ctx.ellipse(zx,zy,zr,zr*.72,0,0,Math.PI*2); ctx.fill();
+    });
+    // sulci
+    ctx.strokeStyle='rgba(0,180,220,.19)'; ctx.lineWidth=.9;
+    ctx.beginPath(); ctx.moveTo(cx,cy-ry*.94); ctx.bezierCurveTo(cx+2,cy-ry*.3,cx-2,cy+ry*.3,cx,cy+ry*.89); ctx.stroke();
+    [[cx+rx*.24,cy-ry*.64,cx+rx*.74,cy-ry*.34,cx+rx*.84,cy+ry*.14],[cx+rx*.16,cy-ry*.22,cx+rx*.64,cy-.02,cx+rx*.78,cy+ry*.38],[cx-rx*.24,cy-ry*.64,cx-rx*.74,cy-ry*.34,cx-rx*.84,cy+ry*.14],[cx-rx*.16,cy-ry*.22,cx-rx*.64,cy-.02,cx-rx*.78,cy+ry*.38]].forEach(([x1,y1,x2,y2,x3,y3])=>{
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(x2,y2,x3,y3); ctx.stroke();
+    });
+    // outline
+    brainPath(cx,cy,rx,ry); ctx.strokeStyle='rgba(0,160,210,.42)'; ctx.lineWidth=1.2; ctx.stroke();
+    // sparks
+    if(S.running&&!S.paused) for(let i=0;i<5;i++){
+      const a=(frame*.04+i*(Math.PI*2/5))%(Math.PI*2);
+      const sx=cx+Math.cos(a)*rx*.52,sy=cy+Math.sin(a)*ry*.55;
+      const dx2=(sx-cx)/rx,dy2=(sy-cy)/ry;
+      if(dx2*dx2+dy2*dy2>1) continue;
+      const sa=Math.sin(frame*.13+i*1.1)*.32+.18;
+      ctx.beginPath(); ctx.arc(sx,sy,1.7,0,Math.PI*2); ctx.fillStyle=`rgba(0,220,255,${sa})`; ctx.fill();
+    }
+    frame++; requestAnimationFrame(drawB);
+  }
+  drawB();
+}
+
+// ════════════════════════════════════════════
+//  WAVES
+// ════════════════════════════════════════════
+function initWave(id,color,freq,getVal){
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); let frame=0; const data=new Array(100).fill(0);
+  function draw(){
+    const w=canvas.offsetWidth||180,h=canvas.offsetHeight||38;
+    canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
+    data.push(getVal()*Math.sin(frame*freq)+Math.random()*.08);
+    if(data.length>w) data.shift();
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=1.2;
+    data.forEach((v,i)=>{const x=i,y=h/2+v*(h*.34);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke(); frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+function initNeuroWave(id){
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); let frame=0;
+  function draw(){
+    const w=canvas.offsetWidth||180,h=canvas.offsetHeight||36;
+    canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
+    const st=S.running?S.stress/100:.3, at=S.running?S.attention/100:.5;
+    ctx.beginPath(); ctx.strokeStyle='rgba(0,180,220,.7)'; ctx.lineWidth=1.4;
+    for(let x=0;x<w;x++){const t=x/w*Math.PI*6+frame*.05;const y=h/2+Math.sin(t)*h*.24*at+Math.sin(t*2.2)*h*.1*st;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke(); frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ════════════════════════════════════════════
+//  RESULTS
+// ════════════════════════════════════════════
+function renderResults(){
+  if(S.history.attention.length===0) return;
+  const avg=n=>arr=>arr.slice(-n).reduce((a,b)=>a+b,0)/Math.max(1,n);
+  const aA=Math.round(avg(40)(S.history.attention)), aE=Math.round(avg(40)(S.history.stress)), aC=Math.round(avg(40)(S.history.load));
+  const aL=+(avg(25)(S.history.latency)).toFixed(1), aP=Math.round(avg(25)(S.history.precision));
+  const eff=Math.round(aA*.4+(100-aE)*.35+(100-aC)*.25);
+  document.getElementById('resAt').textContent=aA;
+  document.getElementById('resEs').textContent=aE;
+  document.getElementById('resCg').textContent=aC;
+  document.getElementById('resLatV').textContent=aL+' seg.';
+  document.getElementById('resPrecV').textContent=aP+'%';
+  document.getElementById('resNavV').textContent=Math.round(avg(20)(S.history.stress)*.28+12);
+  const lS=aL>2?'PROLONGADA':aL>1.4?'MODERADA':'ÓPTIMA';
+  const pS=aP<50?'BAJA':aP<75?'MODERADA':'ALTA';
+  document.getElementById('resLatS').textContent=lS; document.getElementById('resLatS').style.color=aL>2?'var(--red)':aL>1.4?'var(--amber)':'var(--green)';
+  document.getElementById('resPrecS').textContent=pS; document.getElementById('resPrecS').style.color=aP<50?'var(--red)':aP<75?'var(--amber)':'var(--green)';
+  const m=String(Math.floor(S.time/60)).padStart(2,'0'), sc2=String(S.time%60).padStart(2,'0');
+  document.getElementById('resDur').textContent=m+':'+sc2;
+  document.getElementById('resDiff').textContent='DIFICULTAD: '+S.difficulty.toUpperCase();
+  document.getElementById('resDiff').className='diff-badge '+(S.difficulty==='alta'?'diff-high':S.difficulty==='baja'?'diff-low':'diff-mid');
+  document.getElementById('resultsUser').textContent=S.userName+' · '+S.sessionType+' · '+S.scenario.toUpperCase();
+  document.getElementById('resScore').textContent=G.score.toLocaleString();
+  document.getElementById('resScoreSub').textContent='puntos · '+G.hits+' aciertos / '+G.totalTrials+' intentos';
+  drawGauge(eff); drawResultBrain(aA/100,aE/100,aC/100); drawResultNeuro(aE/100,aA/100);
+  buildRecs(aA,aE,aC,aP);
+}
+function drawGauge(val){
+  const canvas=document.getElementById('gaugeCanvas'); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+8,r=42;
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI*.75,Math.PI*2.25); ctx.strokeStyle='rgba(0,100,130,.3)'; ctx.lineWidth=7; ctx.stroke();
+  const color=val<40?'#ff3b3b':val<65?'#ffaa00':'#00e5ff';
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI*.75,Math.PI*.75+val/100*Math.PI*1.5); ctx.strokeStyle=color; ctx.lineWidth=7; ctx.lineCap='round'; ctx.stroke();
+  document.getElementById('gaugeNum').textContent=val; document.getElementById('gaugeNum').style.color=color;
+}
+function drawResultBrain(at,st,ld){
+  const canvas=document.getElementById('brainResult'); if(!canvas) return;
+  canvas.width=canvas.offsetWidth||280; canvas.height=150;
+  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+4,rx=w*.42,ry=h*.43;
+  ctx.clearRect(0,0,w,h);
+  function bp(){ctx.beginPath();ctx.moveTo(cx,cy-ry*.95);ctx.bezierCurveTo(cx+rx*.55,cy-ry*1.05,cx+rx*1.05,cy-ry*.6,cx+rx,cy-ry*.05);ctx.bezierCurveTo(cx+rx*1.05,cy+ry*.45,cx+rx*.7,cy+ry*.85,cx+rx*.15,cy+ry*.9);ctx.bezierCurveTo(cx+rx*.05,cy+ry,cx-rx*.05,cy+ry,cx-rx*.15,cy+ry*.9);ctx.bezierCurveTo(cx-rx*.7,cy+ry*.85,cx-rx*1.05,cy+ry*.45,cx-rx,cy-ry*.05);ctx.bezierCurveTo(cx-rx*1.05,cy-ry*.6,cx-rx*.55,cy-ry*1.05,cx,cy-ry*.95);ctx.closePath();}
+  bp(); ctx.fillStyle='rgba(4,18,32,.95)'; ctx.fill();
+  [[cx,cy-ry*.5,rx*.36+at*rx*.22,60,140,255,at],[cx+rx*.12,cy+ry*.15,rx*.29+st*rx*.2,255,55,55,st],[cx+rx*.2,cy-ry*.1,rx*.25+ld*rx*.16,255,165,0,ld]].forEach(([zx,zy,zr,r,g,b,v])=>{
+    const gd=ctx.createRadialGradient(zx,zy,0,zx,zy,zr);
+    gd.addColorStop(0,`rgba(${r},${g},${b},${v*.82})`); gd.addColorStop(1,'transparent');
+    ctx.fillStyle=gd; ctx.beginPath(); ctx.ellipse(zx,zy,zr,zr*.72,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.strokeStyle='rgba(0,180,220,.18)'; ctx.lineWidth=.9;
+  ctx.beginPath(); ctx.moveTo(cx,cy-ry*.94); ctx.bezierCurveTo(cx+2,cy-ry*.3,cx-2,cy+ry*.3,cx,cy+ry*.89); ctx.stroke();
+  bp(); ctx.strokeStyle='rgba(0,160,210,.42)'; ctx.lineWidth=1.2; ctx.stroke();
+}
+function drawResultNeuro(st,at){
+  const canvas=document.getElementById('neuroResult'); if(!canvas) return;
+  canvas.width=canvas.offsetWidth||280; canvas.height=36; const ctx=canvas.getContext('2d');
+  const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.strokeStyle='rgba(0,180,220,.8)'; ctx.lineWidth=1.4;
+  for(let x=0;x<w;x++){const t=x/w*Math.PI*8;const y=h/2+Math.sin(t)*h*.3*at+Math.sin(t*2.1)*h*.12*st;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+function buildRecs(at,es,ld,pr){
+  const ctx=S.scenario;
+  const recs=[];
+  if(es>65) recs.push({text:'Signos de incremento en estres — se recomienda intervencion psicologica'});
+  if(ld>65) recs.push({text:'Indicadores de carga mental alta — evaluar demanda de tareas'});
+  if(at<40)  recs.push({text:'Patrones de atencion inconsistente — explorar tecnicas de foco'});
+  if(pr<55)  recs.push({text:'Precision reducida — posible fatiga cognitiva acumulada'});
+  if(at>70&&es<40) recs.push({text:'Estado cognitivo optimo registrado en segmentos de la sesion'});
+  // Context-specific
+  if(ctx==='maquinaria'&&(es>55||at<50)) recs.push({text:'ALERTA SEGURIDAD LABORAL: Nivel de atencion o estres no optimo para operar maquinaria. Se recomienda descanso antes de iniciar labores.'});
+  if(ctx==='conduccion'&&S.latency>1.8) recs.push({text:'ATENCION VIAL: Latencia de respuesta elevada. Considerar no conducir en este estado cognitivo.'});
+  if(ctx==='entrevista'&&es>60) recs.push({text:'Nivel de estres elevado para entrevista. Recomendar tecnicas de respiracion previas al encuentro.'});
+  if(ctx==='examen'&&ld>65) recs.push({text:'Carga mental alta previa al examen. Sugerida estrategia de espaciado cognitivo y descanso.'});
+  if(recs.length===0) recs.push({text:'Desempeno dentro de parametros esperados para la sesion'});
+  const prom=es>60||ld>65?'Promover ejercicios de respiracion y tecnicas de relajacion':at<40?'Promover entrenamiento de atencion selectiva y mindfulness':'Mantener rutina cognitiva. Considerar incrementar dificultad en proxima sesion.';
+  document.getElementById('recList').innerHTML=recs.map(r=>`<li class="rec-item"><span class="rec-text">${r.text}</span></li>`).join('');
+  document.getElementById('promoverText').textContent=prom;
+}
+
+// ════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════
+function exportarJSON(){
+  const avg=n=>arr=>+(arr.slice(-n).reduce((a,b)=>a+b,0)/Math.max(1,n)).toFixed(2);
+  const d={usuario:S.userName,sesion:S.sessionType,escenario:S.scenario,duracion:document.getElementById('resDur').textContent,puntuacion:G.score,aciertos:G.hits,intentos:G.totalTrials,clasificacion_mtc:MTC.state,metricas:{atencion:Math.round(avg(40)(S.history.attention)),estres:Math.round(avg(40)(S.history.stress)),carga:Math.round(avg(40)(S.history.load)),latencia:avg(25)(S.history.latency),precision:Math.round(avg(25)(S.history.precision))},timestamp:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='cognilith_'+S.userName+'_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
+  notify('Informe JSON descargado.','info');
+}
+
+// ════════════════════════════════════════════
+//  RESET
+// ════════════════════════════════════════════
+function nuevaSesion(){
+  S.running=false;S.paused=false;S.time=0;
+  S.attention=50;S.stress=20;S.load=40;
+  S.history={attention:[],stress:[],load:[],latency:[],precision:[]};
+  G.active=false;G.score=0;G.hits=0;G.misses=0;G.totalTrials=0;
+  G.targets=[];G.combo=0;G.gameIdx=0;G.countdownActive=false;G.reactionTimes=[];G.trackTarget=null;G.trackTime=0;
+  MTC.reset(); updateSemaforo('media'); updateNVS('media');
+  WA.stopAmbient();
+  document.getElementById('audioVisualizer').style.display='none';
+  const c=document.getElementById('scene3d');
+  if(c){c.onclick=null;c.onmousemove=null;c.style.cursor='default';}
+  if(S.timerInterval) clearInterval(S.timerInterval);
+  if(S.animInterval) clearInterval(S.animInterval);
+  document.getElementById('gameTimer').textContent='00:00';
+  document.getElementById('timerDisplay').textContent='00:00';
+  document.getElementById('statusText').textContent='SISTEMA LISTO';
+  document.getElementById('btnPausar').textContent='PAUSAR';
+  document.getElementById('challengeText').textContent='Presiona INICIAR en el panel derecho';
+  showScreen('calib'); notify('Sistema reiniciado.','info');
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  WA.init();
+  initScene();
+  initBrain('brainCanvas',180);
+  initWave('waveEEG','rgba(0,200,220,.8)',.15,()=>S.running?S.attention/100*.8:.3);
+  initWave('waveBPM','rgba(255,100,80,.7)',.08,()=>S.running?S.stress/100*.9:.2);
+  initNeuroWave('neuroWave');
+  animateAudioBars();
+  renderTut();
+});
+</script>
+</body>
+</html>
