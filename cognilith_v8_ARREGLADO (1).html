@@ -1,0 +1,2928 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COGNILITH — Sistema Interactivo de Simulación Cognitiva</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --cyan:#00e5ff;--cyan2:#00b4cc;--cyan3:#007a8a;
+  --red:#ff3b3b;--red2:#cc2222;
+  --amber:#ffaa00;--amber2:#cc8800;
+  --green:#00ff88;--green2:#00cc66;
+  --blue:#4488ff;--blue2:#2255cc;
+  --purple:#aa66ff;
+  --bg:#040d14;--bg2:#071520;--bg3:#0a1d2e;
+  --panel:#081825;--panel2:#0d2035;
+  --border:#0d4060;--border2:#1a6080;
+  --text:#c8e8f0;--text2:#7ab0c0;--text3:#3a7080;
+}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.010) 2px,rgba(0,229,255,0.010) 4px);pointer-events:none;z-index:9998;}
+
+/* ── TOPBAR ── */
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 20px var(--cyan2);}
+.logo span{color:var(--text2);font-weight:400;font-size:11px;letter-spacing:2px;display:block;margin-top:2px;}
+.status-bar{display:flex;gap:14px;align-items:center;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35};}
+.diff-badge{display:inline-block;padding:3px 10px;font-size:9px;letter-spacing:1px;font-family:'Orbitron',monospace;border-radius:2px;}
+.diff-low{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid var(--green2);}
+.diff-mid{background:rgba(255,170,0,0.1);color:var(--amber);border:1px solid var(--amber2);}
+.diff-high{background:rgba(255,59,59,0.1);color:var(--red);border:1px solid var(--red2);}
+.music-toggle-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:9px;letter-spacing:1px;font-family:'Orbitron',monospace;border-radius:2px;background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid var(--cyan3);cursor:pointer;transition:all .2s;}
+.music-toggle-btn:hover{background:rgba(0,229,255,.2);box-shadow:0 0 10px rgba(0,229,255,.25);}
+.music-toggle-btn.music-off{background:rgba(255,59,59,.06);color:var(--text3);border-color:var(--border);}
+.phase-nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;}
+.phase-btn{padding:10px 20px;border:none;background:transparent;color:var(--text3);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase;transition:all .2s;}
+.phase-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 10px var(--cyan2);}
+.phase-btn.done{color:var(--green2);}
+.phase-btn:hover:not(.active){color:var(--text2);}
+.tech{font-family:'Share Tech Mono',monospace;}
+.session-timer{font-family:'Orbitron',monospace;font-size:11px;color:var(--text3);letter-spacing:2px;}
+
+/* ── SCREENS ── */
+.screen{display:none;padding:16px;}
+.screen.active{display:block;}
+
+/* ── PANELS ── */
+.grid3{display:grid;grid-template-columns:220px 1fr 220px;gap:12px;height:calc(100vh - 142px);}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:12px;position:relative;overflow:hidden;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan3),transparent);}
+.panel-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:600;color:var(--cyan2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.metric{margin-bottom:10px;}
+.metric-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.metric-label{font-size:10px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;}
+.metric-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.metric-val.low{color:var(--green);}
+.metric-val.mid{color:var(--amber);}
+.metric-val.high{color:var(--red);}
+.bar-track{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.bar-cyan{background:var(--cyan2);}
+.bar-red{background:var(--red2);}
+.bar-amber{background:var(--amber2);}
+.wave-container{margin:6px 0;height:38px;overflow:hidden;}
+.wave-label{font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:2px;}
+canvas.wave{width:100%;height:100%;display:block;}
+.rt-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:6px 0;}
+.rt-cell{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:5px;text-align:center;}
+.rt-num{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.rt-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+/* ── VR CENTER ── */
+.vr-env{background:var(--bg);border:1px solid var(--border2);border-radius:4px;flex:1;position:relative;overflow:hidden;min-height:200px;}
+canvas.scene3d{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;}
+.vr-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(4,13,20,.96));padding:14px 20px;text-align:center;pointer-events:none;}
+.vr-overlay button{pointer-events:all;}
+.challenge-text{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.challenge-val{font-family:'Orbitron',monospace;font-size:12px;color:var(--cyan);letter-spacing:1px;margin-bottom:8px;}
+.play-btn{padding:9px 28px;background:transparent;border:1px solid var(--amber);color:var(--amber);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .3s;}
+.play-btn:hover{background:rgba(255,170,0,.12);box-shadow:0 0 16px rgba(255,170,0,.3);}
+
+/* ── PSYCH PANEL ── */
+.cfg-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.cfg-label{font-size:10px;color:var(--text3);letter-spacing:1px;}
+.cfg-select{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:11px;padding:3px 6px;border-radius:2px;cursor:pointer;}
+.btn-sys{width:100%;padding:7px 10px;border:none;font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:5px;}
+.btn-start{background:rgba(0,229,255,.1);border:1px solid var(--cyan3);color:var(--cyan);}
+.btn-start:hover{background:rgba(0,229,255,.2);}
+.btn-pause{background:rgba(255,170,0,.1);border:1px solid var(--amber2);color:var(--amber);}
+.btn-export{background:rgba(0,255,136,.1);border:1px solid var(--green2);color:var(--green);}
+.brain-container{width:100%;height:130px;position:relative;}
+canvas.brain{width:100%;height:100%;display:block;}
+.brain-legend{display:flex;flex-direction:column;gap:3px;margin-top:5px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.neuro-wave{height:36px;}
+canvas.nwave{width:100%;height:100%;display:block;}
+.alert-box{padding:5px 7px;margin-bottom:5px;border-left:2px solid;display:flex;gap:5px;align-items:flex-start;}
+.alert-box.warn{border-color:var(--amber);background:rgba(255,170,0,.05);}
+.alert-box.danger{border-color:var(--red);background:rgba(255,59,59,.05);}
+.alert-box.info{border-color:var(--cyan);background:rgba(0,229,255,.05);}
+.alert-text{font-size:10px;color:var(--text2);line-height:1.4;}
+
+/* ── CALIB SCREEN ── */
+.calib-container{max-width:680px;margin:0 auto;padding:30px 20px;}
+.calib-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);margin-bottom:6px;text-shadow:0 0 20px var(--cyan2);}
+.calib-sub{font-size:13px;color:var(--text2);margin-bottom:28px;letter-spacing:1px;}
+.calib-step{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:14px;}
+.calib-step-title{font-family:'Orbitron',monospace;font-size:10px;color:var(--cyan2);letter-spacing:2px;margin-bottom:12px;}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.slider-label{font-size:12px;color:var(--text2);width:160px;flex-shrink:0;}
+input[type=range]{flex:1;accent-color:var(--cyan);}
+.slider-val{font-family:'Orbitron',monospace;font-size:12px;color:var(--cyan);width:55px;text-align:right;}
+.baseline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.baseline-cell{background:var(--bg3);border:1px solid var(--border);padding:10px;text-align:center;border-radius:2px;}
+.baseline-val{font-family:'Orbitron',monospace;font-size:17px;color:var(--text3);}
+.baseline-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:3px;}
+.calib-btn{margin-top:18px;padding:12px 40px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .3s;display:block;width:100%;}
+.calib-btn:hover{background:rgba(0,229,255,.1);box-shadow:0 0 16px rgba(0,229,255,.2);}
+
+/* ── SCENARIO PICKER ── */
+.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px;}
+.sc-card{background:var(--bg3);border:2px solid var(--border);border-radius:6px;padding:14px 12px;cursor:pointer;transition:all .25s;position:relative;}
+.sc-card:hover{border-color:var(--cyan2);background:rgba(0,180,200,.07);}
+.sc-card.selected{border-color:var(--cyan);background:rgba(0,229,255,.09);box-shadow:0 0 12px rgba(0,229,255,.18);}
+.sc-name{font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan2);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
+.sc-desc{font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:8px;}
+.sc-mood{display:inline-block;font-size:9px;padding:2px 8px;border-radius:2px;letter-spacing:1px;font-family:'Orbitron',monospace;}
+
+/* ── TUTORIAL MODAL ── */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,8,16,.92);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:var(--panel2);border:1px solid var(--border2);border-radius:6px;padding:28px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;}
+.modal-title{font-family:'Orbitron',monospace;font-size:15px;color:var(--cyan);letter-spacing:2px;margin-bottom:16px;}
+.tut-step{display:none;}
+.tut-step.active{display:block;}
+.tut-icon{font-size:40px;text-align:center;margin-bottom:12px;}
+.tut-h{font-family:'Orbitron',monospace;font-size:12px;color:var(--amber);letter-spacing:1px;margin-bottom:8px;}
+.tut-p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px;}
+.tut-tip{background:rgba(0,229,255,.06);border-left:2px solid var(--cyan3);padding:8px 12px;font-size:12px;color:var(--text2);margin-top:10px;border-radius:0 3px 3px 0;}
+.tut-nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+.tut-dots{display:flex;gap:6px;}
+.tut-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);transition:.2s;}
+.tut-dot.active{background:var(--cyan);}
+.tut-btn{padding:8px 22px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.2s;}
+.tut-btn:hover{background:rgba(0,229,255,.1);}
+.tut-btn.amber{border-color:var(--amber);color:var(--amber);}
+.tut-btn.amber:hover{background:rgba(255,170,0,.1);}
+
+/* ── RESULTS ── */
+.results-container{max-width:920px;margin:0 auto;padding:18px;}
+.results-header{text-align:center;margin-bottom:20px;}
+.results-title{font-family:'Orbitron',monospace;font-size:18px;color:var(--amber);margin-bottom:4px;}
+.results-sub{font-size:12px;color:var(--text2);}
+.results-grid2{display:grid;grid-template-columns:220px 1fr;gap:14px;margin-bottom:14px;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.result-panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px;}
+.result-panel-title{font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan2);letter-spacing:2px;margin-bottom:10px;}
+.big-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.big-metric{background:var(--bg3);border:1px solid var(--border);padding:9px;text-align:center;border-radius:2px;}
+.big-num{font-family:'Orbitron',monospace;font-size:19px;font-weight:700;}
+.big-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;}
+.gauge-container{width:100%;height:110px;position:relative;display:flex;align-items:center;justify-content:center;}
+canvas.gauge{width:110px;height:110px;}
+.gauge-center{position:absolute;text-align:center;}
+.gauge-num{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--cyan);}
+.gauge-sub{font-size:9px;color:var(--text3);letter-spacing:1px;}
+.export-btn{margin-top:10px;padding:8px 16px;background:rgba(255,59,59,.1);border:1px solid var(--red2);color:var(--red);font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;width:100%;}
+.new-session-btn{margin-top:6px;padding:8px 16px;background:rgba(0,229,255,.1);border:1px solid var(--cyan3);color:var(--cyan);font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:block;width:100%;}
+.stat-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+.stat-lbl{font-size:11px;color:var(--text2);}
+.stat-val{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);}
+.rec-list{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.rec-item{display:flex;gap:7px;align-items:flex-start;padding:5px;background:var(--bg3);border-radius:2px;}
+.rec-icon{font-size:13px;flex-shrink:0;}
+.rec-text{font-size:11px;color:var(--text2);line-height:1.4;}
+
+/* ── NOTIFICATION ── */
+.notif{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--border2);border-left:3px solid var(--cyan);padding:10px 14px;border-radius:4px;font-size:12px;color:var(--text);max-width:280px;z-index:9997;transform:translateX(340px);transition:transform .3s ease;font-family:'Rajdhani',sans-serif;}
+.notif.show{transform:translateX(0);}
+.notif.warn{border-left-color:var(--amber);}
+.notif.danger{border-left-color:var(--red);}
+
+/* ── LOGIN OVERLAY ── */
+.login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,8,14,.97);z-index:9000;display:flex;align-items:center;justify-content:center;}
+.login-overlay.hidden{display:none;}
+.login-box{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:36px 40px;width:360px;max-width:94vw;}
+.login-logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);text-shadow:0 0 20px var(--cyan2);text-align:center;letter-spacing:4px;margin-bottom:4px;}
+.login-sub{font-size:11px;color:var(--text3);text-align:center;letter-spacing:2px;margin-bottom:28px;}
+.login-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:22px;}
+.login-tab{flex:1;padding:8px;background:transparent;border:none;color:var(--text3);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;}
+.login-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;}
+.login-field input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Rajdhani',sans-serif;font-size:13px;border-radius:3px;outline:none;transition:.2s;}
+.login-field input:focus{border-color:var(--cyan2);}
+.login-field select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Rajdhani',sans-serif;font-size:13px;border-radius:3px;outline:none;}
+.login-btn{width:100%;padding:11px;background:rgba(0,229,255,.1);border:1px solid var(--cyan3);color:var(--cyan);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:.3s;margin-top:6px;border-radius:3px;}
+.login-btn:hover{background:rgba(0,229,255,.2);box-shadow:0 0 14px rgba(0,229,255,.2);}
+.login-err{font-size:11px;color:var(--red);text-align:center;min-height:16px;margin-top:8px;}
+.login-form{display:block;}
+.login-form.hidden{display:none;}
+
+/* ── USER BADGE TOPBAR ── */
+.user-badge{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:3px;background:var(--bg3);transition:.2s;}
+.user-badge:hover{border-color:var(--cyan3);}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--cyan3);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--bg);}
+.user-name-badge{font-size:11px;color:var(--text2);font-family:'Rajdhani',sans-serif;font-weight:600;}
+.user-role-badge{font-size:9px;color:var(--text3);letter-spacing:1px;}
+
+/* ── HISTORY SCREEN ── */
+.hist-container{max-width:960px;margin:0 auto;padding:18px;}
+.hist-title{font-family:'Orbitron',monospace;font-size:16px;color:var(--cyan);letter-spacing:2px;margin-bottom:4px;}
+.hist-sub{font-size:12px;color:var(--text3);margin-bottom:20px;}
+.hist-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;}
+.hist-filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.hist-filter-btn{padding:5px 14px;background:transparent;border:1px solid var(--border);color:var(--text3);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:.2s;}
+.hist-filter-btn.active{border-color:var(--cyan);color:var(--cyan);}
+.hist-table{width:100%;border-collapse:collapse;}
+.hist-table th{font-family:'Orbitron',monospace;font-size:8px;color:var(--text3);letter-spacing:1px;padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;text-transform:uppercase;}
+.hist-table td{padding:8px 10px;border-bottom:1px solid rgba(13,64,96,.3);font-size:12px;color:var(--text2);vertical-align:middle;}
+.hist-table tr:hover td{background:rgba(0,180,220,.04);}
+.hist-score-pill{font-family:'Orbitron',monospace;font-size:11px;padding:2px 8px;border-radius:2px;background:rgba(255,170,0,.1);color:var(--amber);border:1px solid var(--amber2);}
+.hist-eff{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.hist-actions{display:flex;gap:6px;}
+.hist-action-btn{padding:3px 9px;font-size:9px;font-family:'Orbitron',monospace;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:.2s;}
+.hist-view-btn{background:rgba(0,229,255,.08);border:1px solid var(--cyan3);color:var(--cyan2);}
+.hist-del-btn{background:rgba(255,59,59,.08);border:1px solid var(--red2);color:var(--red);}
+.hist-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.hist-stat-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:center;}
+.hist-stat-num{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--cyan);}
+.hist-stat-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:3px;}
+
+/* ── SESSION DETAIL MODAL ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+.detail-metric{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:10px;text-align:center;}
+.detail-num{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;}
+.detail-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;}
+</style>
+</head>
+<body>
+<!-- ══ LOGIN OVERLAY ══ -->
+<div class="login-overlay" id="loginOverlay">
+<div class="login-box">
+  <div class="login-logo">COGNILITH</div>
+  <div class="login-sub">SISTEMA DE SIMULACIÓN COGNITIVA v1.0</div>
+  <div class="login-tabs">
+    <button class="login-tab active" id="tabLogin" onclick="switchLoginTab('login')">INGRESAR</button>
+    <button class="login-tab" id="tabRegister" onclick="switchLoginTab('register')">REGISTRARSE</button>
+  </div>
+  <!-- LOGIN FORM -->
+  <div class="login-form" id="formLogin">
+    <div class="login-field"><label>Usuario</label><input type="text" id="loginUser" placeholder="Tu nombre de usuario"></div>
+    <div class="login-field"><label>Contraseña</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" onclick="doLogin()">INICIAR SESIÓN</button>
+    <div class="login-err" id="loginErr"></div>
+    <div style="margin-top:14px;padding:8px;background:rgba(0,229,255,.05);border:1px solid var(--border);border-radius:3px;font-size:10px;color:var(--text3);text-align:center;">
+      Demo: <span style="color:var(--cyan)">demo / demo123</span>
+    </div>
+  </div>
+  <!-- REGISTER FORM -->
+  <div class="login-form hidden" id="formRegister">
+    <div class="login-field"><label>Nombre completo</label><input type="text" id="regName" placeholder="Nombre y apellido"></div>
+    <div class="login-field"><label>Usuario</label><input type="text" id="regUser" placeholder="Nombre de usuario único"></div>
+    <div class="login-field"><label>Contraseña</label><input type="password" id="regPass" placeholder="Mínimo 4 caracteres" onkeydown="if(event.key==='Enter')doRegister()"></div>
+    <button class="login-btn" onclick="doRegister()">CREAR CUENTA</button>
+    <div class="login-err" id="registerErr"></div>
+  </div>
+</div>
+</div>
+
+<div class="app">
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="logo">COGNILITH <span>SISTEMA DE SIMULACIÓN COGNITIVA v1.0</span></div>
+  <div class="status-bar">
+    <span class="session-timer tech" id="timerDisplay">00:00</span>
+    <div class="status-dot" id="statusDot"></div>
+    <span class="tech" id="statusText" style="font-size:10px;color:var(--text3);letter-spacing:1px;">SISTEMA LISTO</span>
+    <span class="diff-badge diff-mid" id="diffBadge">DIFICULTAD: MEDIA</span>
+    <button class="music-toggle-btn" id="musicToggleBtn" onclick="toggleMusic()" title="Activar o desactivar la música ambiental">🔊 MÚSICA</button>
+    <div class="user-badge" id="userBadge" onclick="showScreen('history')">
+      <div class="user-avatar" id="userAvatar">U</div>
+      <div><div class="user-name-badge" id="userNameBadge">Usuario</div><div class="user-role-badge" id="userRoleBadge">PACIENTE</div></div>
+    </div>
+    <button onclick="doLogout()" style="background:transparent;border:1px solid var(--border);color:var(--text3);font-family:'Orbitron',monospace;font-size:8px;padding:4px 8px;cursor:pointer;letter-spacing:1px;border-radius:2px;">SALIR</button>
+  </div>
+</div>
+
+<!-- ══ PHASE NAV ══ -->
+<div class="phase-nav">
+  <button class="phase-btn active" onclick="showScreen('calib')" id="btn-calib">I. CALIBRACIÓN</button>
+  <button class="phase-btn" onclick="showScreen('game')" id="btn-game">II. SIMULACIÓN ADAPTATIVA</button>
+  <button class="phase-btn" onclick="showScreen('results')" id="btn-results">III. RESULTADOS</button>
+  <button class="phase-btn" onclick="showScreen('history')" id="btn-history">IV. HISTORIAL</button>
+  <button class="phase-btn" id="btn-admin" onclick="showScreen('admin')" style="display:none;">⚙ ADMIN / PSICÓLOGO</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1 — CALIBRACIÓN
+══════════════════════════════════════════ -->
+<div class="screen active" id="screen-calib">
+<div class="calib-container">
+  <div class="calib-title">FASE I — CALIBRACIÓN</div>
+  <div class="calib-sub">Establece tu línea base cognitiva antes de iniciar la sesión</div>
+
+  <!-- Perfil -->
+  <div class="calib-step">
+    <div class="calib-step-title">PERFIL DE USUARIO</div>
+    <div class="slider-row">
+      <span class="slider-label">Nombre del evaluado</span>
+      <input type="text" id="userName" value="Usuario" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-family:'Rajdhani',sans-serif;font-size:13px;border-radius:2px;">
+    </div>
+    <!-- MOSTRAR NOMBRE REGISTRADO -->
+    <div style="margin-top:12px;padding:12px;background:var(--bg3);border:2px solid var(--cyan);border-radius:3px;text-align:center;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">USUARIO REGISTRADO</div>
+      <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--cyan);font-weight:bold;text-transform:uppercase;letter-spacing:2px;" id="nombreRegistrado">Usuario</div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px;padding:6px 8px;background:rgba(0,229,255,.04);border:1px solid var(--border);border-radius:2px;">
+      ℹ El contexto de simulación define tanto el entorno visual como el tipo de análisis cognitivo. No es necesario seleccionar un tipo de sesión por separado.
+    </div>
+  </div>
+
+  <!-- Contexto unificado -->
+  <div class="calib-step">
+    <div class="calib-step-title">CONTEXTO DE SIMULACIÓN — Entorno + Análisis</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;letter-spacing:.5px;">Cada contexto activa un entorno visual inmersivo distinto y ajusta la interpretación heurística del motor cognitivo al propósito real de la sesión.</div>
+    <div class="scenario-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="sc-card selected" onclick="selectScenario(this,'bosque')" id="sc-bosque">
+        <div class="sc-name">CALMA Y FOCO</div>
+        <div class="sc-desc">Bosque nocturno. Partículas flotantes, niebla cian, sonido de viento suave. Analiza atención sostenida y bienestar cognitivo base.</div>
+        <span class="sc-mood" style="background:rgba(0,255,136,.12);color:var(--green2);border:1px solid var(--green2);">BIENESTAR · MINDFULNESS</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'entrevista')" id="sc-entrevista">
+        <div class="sc-name">ENTREVISTA DE TRABAJO</div>
+        <div class="sc-desc">Sala de oficina. Ventanas, laptop, sonido de aire acondicionado y teclado. Mide estrés social y agilidad mental bajo presión.</div>
+        <span class="sc-mood" style="background:rgba(68,136,255,.12);color:var(--blue);border:1px solid var(--blue2);">PRESIÓN SOCIAL · ATENCIÓN</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'maquinaria')" id="sc-maquinaria">
+        <div class="sc-name">OPERACIÓN DE MAQUINARIA</div>
+        <div class="sc-desc">Planta industrial. Máquinas, tuberías, indicadores. Sonido mecánico constante. Evalúa tiempo de reacción para seguridad laboral.</div>
+        <span class="sc-mood" style="background:rgba(255,170,0,.12);color:var(--amber);border:1px solid var(--amber2);">SEGURIDAD LABORAL · REACCIÓN</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'conduccion')" id="sc-conduccion">
+        <div class="sc-name">CONDUCCIÓN VEHICULAR</div>
+        <div class="sc-desc">Carretera nocturna. Líneas de vía, faros entrantes, sonido de motor, tráfico y bocinas ocasionales. Mide reflejos e inhibición de respuesta al volante.</div>
+        <span class="sc-mood" style="background:rgba(0,180,220,.12);color:var(--cyan2);border:1px solid var(--cyan3);">HABILIDAD VIAL · REFLEJOS</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'examen')" id="sc-examen">
+        <div class="sc-name">EXAMEN ACADÉMICO</div>
+        <div class="sc-desc">Salón de clases. Tablero, pupitres en perspectiva, silencio con eco leve. Evalúa memoria de trabajo y carga mental ante evaluación.</div>
+        <span class="sc-mood" style="background:rgba(170,136,255,.12);color:var(--purple);border:1px solid var(--purple);">RENDIMIENTO ACADÉMICO · MEMORIA</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'estres')" id="sc-estres">
+        <div class="sc-name">ALTA CARGA Y ESTRÉS</div>
+        <div class="sc-desc">Tormenta eléctrica. Relámpagos, ambiente caótico rojo, truenos simulados. Evalúa resiliencia cognitiva bajo presión máxima.</div>
+        <span class="sc-mood" style="background:rgba(255,59,59,.12);color:var(--red);border:1px solid var(--red2);">RESILIENCIA · REGULACIÓN</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'ciudad')" id="sc-ciudad">
+        <div class="sc-name">CIUDAD NOCTURNA</div>
+        <div class="sc-desc">Skyline urbano, edificios iluminados, tráfico lejano y bocinas. Evalúa atención dividida en entorno de alta estimulación sensorial.</div>
+        <span class="sc-mood" style="background:rgba(255,170,0,.12);color:var(--amber);border:1px solid var(--amber2);">ESTIMULACIÓN ALTA · FOCO</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'hospital')" id="sc-hospital">
+        <div class="sc-name">ENTORNO CLÍNICO</div>
+        <div class="sc-desc">Sala hospitalaria. Monitor de signos vitales, luces blancas frías, beep rítmico. Evalúa control emocional y precisión bajo presión clínica.</div>
+        <span class="sc-mood" style="background:rgba(0,229,255,.12);color:var(--cyan);border:1px solid var(--cyan3);">CONTROL EMOCIONAL · PRECISIÓN</span>
+      </div>
+      <div class="sc-card" onclick="selectScenario(this,'deporte')" id="sc-deporte">
+        <div class="sc-name">RENDIMIENTO DEPORTIVO</div>
+        <div class="sc-desc">Estadio iluminado, pista de atletismo, tribuna con multitud. Evalúa velocidad de reacción y coordinación bajo presión competitiva.</div>
+        <span class="sc-mood" style="background:rgba(0,255,136,.12);color:var(--green);border:1px solid var(--green2);">COMPETENCIA · VELOCIDAD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuración simple -->
+  <div class="calib-step">
+    <div class="calib-step-title">ANTES DE INICIAR</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:14px;padding:6px 8px;background:rgba(0,229,255,.04);border:1px solid var(--border);border-radius:2px;line-height:1.5;">
+      Responde 3 preguntas simples sobre ti. El sistema establecerá tu línea base automáticamente.
+    </div>
+
+    <!-- Pregunta 1: Reactividad visual -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--cyan);margin-bottom:6px;font-weight:bold;">1. ¿Qué tan fácil te distraen los estímulos visuales?</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:10px;background:rgba(0,229,255,.08);border-left:3px solid var(--cyan);border-radius:2px;line-height:1.6;">
+        Los "estímulos visuales" son las cosas que VES: destellos, luces brillantes, colores que cambian, movimiento rápido. La pregunta es: ¿estos cambios visuales te atrapan la atención fácilmente o puedes ignorarlos?
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setCalib('sens',3)" id="btn-sens-bajo" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">No me distraen</button>
+        <button onclick="setCalib('sens',5)" id="btn-sens-medio" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:2px solid var(--cyan);color:var(--cyan);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.background='rgba(0,229,255,.15)'" onmouseout="this.style.background='rgba(0,229,255,.08)'">Normal</button>
+        <button onclick="setCalib('sens',8)" id="btn-sens-alto" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Me distraen mucho</button>
+      </div>
+      <div id="desc-sens" style="font-size:10px;color:var(--text3);margin-top:8px;padding:8px;background:rgba(0,229,255,.03);border-radius:2px;display:none;">
+        <strong style="color:var(--cyan);">Tu respuesta:</strong> <span id="desc-sens-text">--</span>
+      </div>
+    </div>
+
+    <!-- Pregunta 2: Velocidad -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--cyan);margin-bottom:6px;font-weight:bold;">2. ¿Cuál es tu velocidad de reacción?</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:10px;background:rgba(0,229,255,.08);border-left:3px solid var(--cyan);border-radius:2px;line-height:1.6;">
+        "Velocidad de reacción" = cuando ves algo y tienes que responder rápido, ¿cuánto tiempo tardas? ¿Respondes casi automáticamente o prefieres pensar un poco antes?
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setCalib('vel',900)" id="btn-vel-rapido" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Muy rápido</button>
+        <button onclick="setCalib('vel',1400)" id="btn-vel-normal" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:2px solid var(--cyan);color:var(--cyan);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.background='rgba(0,229,255,.15)'" onmouseout="this.style.background='rgba(0,229,255,.08)'">Normal</button>
+        <button onclick="setCalib('vel',1900)" id="btn-vel-lento" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Más lento</button>
+      </div>
+      <div id="desc-vel" style="font-size:10px;color:var(--text3);margin-top:8px;padding:8px;background:rgba(0,229,255,.03);border-radius:2px;display:none;">
+        <strong style="color:var(--cyan);">Tu respuesta:</strong> <span id="desc-vel-text">--</span>
+      </div>
+    </div>
+
+    <!-- Pregunta 3: Tolerancia -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--cyan);margin-bottom:6px;font-weight:bold;">3. ¿Qué tan bien toleras la presión?</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:10px;background:rgba(0,229,255,.08);border-left:3px solid var(--cyan);border-radius:2px;line-height:1.6;">
+        "Tolerar presión" = cuando hay estrés, prisa o algo importante en juego, ¿te mantienes tranquilo o te afecta? ¿Funciona bien tu mente bajo presión?
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setCalib('tol',2)" id="btn-tol-bajo" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Me estresa fácil</button>
+        <button onclick="setCalib('tol',5)" id="btn-tol-medio" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:2px solid var(--cyan);color:var(--cyan);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.background='rgba(0,229,255,.15)'" onmouseout="this.style.background='rgba(0,229,255,.08)'">Normal</button>
+        <button onclick="setCalib('tol',9)" id="btn-tol-alto" style="flex:1;min-width:110px;padding:10px;background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--text2);font-family:'Rajdhani',sans-serif;cursor:pointer;border-radius:2px;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)'">Muy tranquilo</button>
+      </div>
+      <div id="desc-tol" style="font-size:10px;color:var(--text3);margin-top:8px;padding:8px;background:rgba(0,229,255,.03);border-radius:2px;display:none;">
+        <strong style="color:var(--cyan);">Tu respuesta:</strong> <span id="desc-tol-text">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Línea base -->
+  <div class="calib-step">
+    <div class="calib-step-title">LÍNEA BASE COGNITIVA — ESTADO NEUTRO</div>
+    <div class="baseline-grid">
+      <div class="baseline-cell"><div class="baseline-val" id="baseAt">--</div><div class="baseline-lbl">ATENCIÓN</div></div>
+      <div class="baseline-cell"><div class="baseline-val" id="baseEs">--</div><div class="baseline-lbl">ESTRÉS</div></div>
+      <div class="baseline-cell"><div class="baseline-val" id="baseCg">--</div><div class="baseline-lbl">CARGA COGNITIVA</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3);">El encéfalo 3D aparece en estado neutro. No hay activaciones destacadas hasta iniciar la sesión.</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text3);padding:6px 8px;background:rgba(255,170,0,.04);border:1px solid var(--border);border-radius:2px;line-height:1.5;">
+      ℹ <strong style="color:var(--amber)">¿De dónde sale este cálculo?</strong> Estos tres números se derivan de tus tres respuestas anteriores mediante una fórmula heurística simple y declarada (sin caja negra ni modelo entrenado), inspirada conceptualmente en la relación activación–desempeño de la Ley de Yerkes-Dodson y en la Teoría de Carga Cognitiva de Sweller (1988): a mayor sensibilidad visual, mayor activación basal de atención y carga; a mayor tolerancia personal declarada, menor estrés basal. Estos valores son tu punto de comparación: durante la sesión, el sistema mide qué tanto te alejas de <strong>tu propia</strong> línea base, no de un estándar poblacional.
+    </div>
+  </div>
+
+  <button class="calib-btn" id="calibBtn" onclick="startCalibration()">INICIAR CALIBRACIÓN</button>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2 — JUEGO
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-game">
+<div class="grid3">
+
+  <!-- LEFT -->
+  <div class="panel" style="overflow-y:auto;">
+    <div class="panel-title">DATOS DEL USUARIO</div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">ATENCIÓN</span><span class="metric-val" id="metAt">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-cyan" id="barAt" style="width:0%"></div></div>
+    </div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">ESTRÉS <span style="font-size:9px;color:var(--text3)">(Resp.)</span></span><span class="metric-val" id="metEs">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-red" id="barEs" style="width:0%"></div></div>
+    </div>
+    <div class="metric">
+      <div class="metric-row"><span class="metric-label">CARGA COGNITIVA</span><span class="metric-val" id="metCg">--</span></div>
+      <div class="bar-track"><div class="bar-fill bar-amber" id="barCg" style="width:0%"></div></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="wave-label">EEG BRAINWAVES (α,β,θ)</div>
+      <div class="wave-container"><canvas class="wave" id="waveEEG"></canvas></div>
+      <div class="wave-label" style="margin-top:3px;">FRECUENCIA CARDÍACA (BPM)</div>
+      <div class="wave-container"><canvas class="wave" id="waveBPM"></canvas></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="panel-title" style="margin-bottom:5px;">MÉTRICAS CONDUCTUALES</div>
+      <div class="rt-grid" style="grid-template-columns:1fr;">
+        <div class="rt-cell"><div class="rt-num" id="rtLat" style="color:var(--cyan);">--</div><div class="rt-lbl">LATENCIA</div></div>
+      </div>
+      <div class="rt-grid">
+        <div class="rt-cell"><div class="rt-num" id="rtPrec" style="color:var(--green);">--%</div><div class="rt-lbl">PRECISIÓN</div></div>
+        <div class="rt-cell"><div class="rt-num" id="rtNav" style="color:var(--amber);">--</div><div class="rt-lbl">NAVEGACIÓN</div></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:4px;">
+      <div class="panel-title" style="margin-bottom:5px;">PUNTUACIÓN</div>
+      <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--amber);text-align:center;" id="scorePanel">0</div>
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:2px;">PUNTOS ACUMULADOS</div>
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);text-align:center;margin-top:4px;" id="comboPanel"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="panel" style="padding:8px;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="panel-title" style="margin:0;">SISTEMA INTELIGENTE — SIMULADOR VIRTUAL</div>
+      <span class="session-timer tech" id="gameTimer">00:00</span>
+    </div>
+    <div class="vr-env">
+      <canvas class="scene3d" id="scene3d"></canvas>
+      <div class="vr-overlay">
+        <div class="challenge-text">RETO ACTIVO</div>
+        <div class="challenge-val" id="challengeText">Presiona INICIAR en el panel derecho</div>
+        <button class="play-btn" id="playBtn" onclick="toggleGame()">INICIAR SIMULACION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel" style="overflow-y:auto;">
+    <div class="panel-title">PANEL DEL EVALUADOR</div>
+    <!-- Context indicator - no duplicate -->
+    <div id="contextIndicator" style="padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;margin-bottom:8px;">
+      <div style="font-size:9px;color:var(--text3);letter-spacing:1px;">CONTEXTO ACTIVO</div>
+      <div style="font-size:11px;color:var(--cyan);font-family:'Orbitron',monospace;margin-top:2px;" id="contextLabel">— Sin iniciar —</div>
+    </div>
+    <div class="cfg-row"><span class="cfg-label">MODO EVALUACIÓN</span>
+      <select class="cfg-select" id="evalModeSelect" onchange="setEvalMode(this.value)">
+        <option value="libre">Libre</option><option value="guiado">Guiado</option><option value="diagnostico">Diagnóstico</option>
+      </select></div>
+    <div class="cfg-row"><span class="cfg-label">FEEDBACK AMBIENTAL</span>
+      <select class="cfg-select" id="feedbackSelect" onchange="setFeedbackAmbiental(this.value)">
+        <option value="activado">Activado</option><option value="visual">Solo Visual</option><option value="desactivado">Desactivado</option>
+      </select></div>
+    <div class="cfg-row"><span class="cfg-label">ANÁLISIS BORDES</span>
+      <span class="diff-badge diff-mid" id="bordeBadge">ACTIVO</span></div>
+    <div style="margin-top:6px;">
+      <button class="btn-sys btn-start" id="btnIniciar" onclick="iniciarSesion()">INICIAR</button>
+      <button class="btn-sys btn-pause" id="btnPausar" onclick="pausarSesion()">PAUSAR</button>
+      <button class="btn-sys btn-export" onclick="exportarReporte()">EXPORTAR REPORTE</button>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">ENCÉFALO 3D EN TIEMPO REAL</div>
+      <div class="brain-container"><canvas class="brain" id="brainCanvas"></canvas></div>
+      <div class="brain-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4488ff;"></div>Atención — Corteza prefrontal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff3b3b;"></div>Estrés — Amígdala</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffaa00;"></div>Carga Cognitiva</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">REPRESENTACIÓN NEUROFISIOLÓGICA</div>
+      <div class="neuro-wave"><canvas class="nwave" id="neuroWave"></canvas></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;">
+      <div class="panel-title">ALERTAS DEL SISTEMA</div>
+      <div id="alertasList"><div class="alert-box info"><span class="alert-text">ℹ Sistema listo para iniciar sesión</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3 — RESULTADOS
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-results">
+<div class="results-container">
+  <div class="results-header">
+    <div class="results-title">SISTEMA INTELIGENTE — SESIÓN FINALIZADA</div>
+    <div class="results-sub tech" id="resultsUser">Usuario · Sesión completada</div>
+  </div>
+  <div class="results-grid2">
+    <div class="result-panel" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="result-panel-title" style="text-align:center;width:100%;">EFICIENCIA COGNITIVA</div>
+      <div class="gauge-container">
+        <canvas class="gauge" id="gaugeCanvas" width="110" height="110"></canvas>
+        <div class="gauge-center"><div class="gauge-num" id="gaugeNum">--</div><div class="gauge-sub">/100</div></div>
+      </div>
+      <button class="export-btn" onclick="exportarJSON()">EXPORTAR INFORME JSON</button>
+      <button class="new-session-btn" onclick="nuevaSesion()">INICIAR NUEVA SESIÓN</button>
+    </div>
+    <div class="result-panel">
+      <div class="result-panel-title">ESTADO CEREBRAL FINAL</div>
+      <div class="big-metrics">
+        <div class="big-metric"><div class="big-num" id="resAt" style="color:var(--blue);">--</div><div class="big-lbl">ATENCIÓN</div></div>
+        <div class="big-metric"><div class="big-num" id="resEs" style="color:var(--red);">--</div><div class="big-lbl">ESTRÉS</div></div>
+        <div class="big-metric"><div class="big-num" id="resCg" style="color:var(--amber);">--</div><div class="big-lbl">CARGA COGN.</div></div>
+      </div>
+      
+      <!-- LÍNEA BASE REGISTRADA -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <div class="result-panel-title" style="margin-bottom:8px;">TU LÍNEA BASE (CALIBRACIÓN)</div>
+        <div class="big-metrics">
+          <div class="big-metric"><div class="big-num" id="baselineAtVal" style="color:var(--blue);font-size:16px;">--</div><div class="big-lbl">ATENCIÓN</div></div>
+          <div class="big-metric"><div class="big-num" id="baselineEsVal" style="color:var(--red);font-size:16px;">--</div><div class="big-lbl">ESTRÉS</div></div>
+          <div class="big-metric"><div class="big-num" id="baselineCgVal" style="color:var(--amber);font-size:16px;">--</div><div class="big-lbl">CARGA</div></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px;">Valores personales de tu calibración inicial</div>
+      </div>
+      
+      <div class="rt-grid">
+        <div class="rt-cell"><div class="rt-num" id="resLatS" style="color:var(--red);">--</div><div class="rt-lbl">LATENCIA</div><div style="font-size:10px;color:var(--text3);margin-top:2px;" id="resLatV">-- seg.</div></div>
+        <div class="rt-cell"><div class="rt-num" id="resPrecS" style="color:var(--red);">--</div><div class="rt-lbl">PRECISIÓN</div><div style="font-size:10px;color:var(--text3);margin-top:2px;" id="resPrecV">--%</div></div>
+        <div class="rt-cell"><div class="rt-num" id="resNavV" style="color:var(--amber);">--</div><div class="rt-lbl">NAVEGACIÓN</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">mov/min</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:7px;border-top:1px solid var(--border);">
+        <span class="tech" style="font-size:11px;color:var(--text3);">DURACIÓN: <span id="resDur" style="color:var(--text2);">--</span></span>
+        <span class="diff-badge" id="resDiff">DIFICULTAD: MEDIA</span>
+      </div>
+      <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--border);">
+        <div class="panel-title" style="margin-bottom:5px;">PUNTUACIÓN FINAL</div>
+        <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--amber);text-align:center;" id="resScore">0</div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:2px;" id="resScoreSub">puntos · -- aciertos / -- intentos</div>
+      </div>
+    </div>
+  </div>
+  <div class="results-grid">
+    <div class="result-panel">
+      <div class="result-panel-title">ESTADO CEREBRAL — MAPA</div>
+      <div style="height:150px;"><canvas id="brainResult" style="width:100%;height:100%;display:block;"></canvas></div>
+      <div class="brain-legend" style="margin-top:6px;">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--cyan);"></div>Atención</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>Estrés</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>Carga Cognitiva</div>
+      </div>
+    </div>
+    <div class="result-panel">
+      <div class="result-panel-title">SE RECOMIENDA ANALIZAR</div>
+      <ul class="rec-list" id="recList"><li class="rec-item"><span class="rec-text">Complete la sesion para ver recomendaciones</span></li></ul>
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px;">
+        <div class="result-panel-title">REPRESENTACIÓN NEUROFISIOLÓGICA</div>
+        <div style="height:36px;"><canvas id="neuroResult" style="width:100%;height:100%;display:block;"></canvas></div>
+      </div>
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px;">
+        <div class="result-panel-title">PROMOVER</div>
+        <div style="font-size:11px;color:var(--text2);" id="promoverText">Ejercicios de respiración y técnicas de relajación</div>
+      </div>
+      <button class="btn-sys btn-export" onclick="guardarResultados()" style="margin-top:8px;">GUARDAR RESULTADOS</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4 — HISTORIAL
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-history">
+<div class="hist-container">
+  <div class="hist-title">HISTORIAL DE SESIONES</div>
+  <div class="hist-sub tech" id="histSubtitle">Registro de sesiones cognitivas almacenadas</div>
+
+  <div class="hist-stat-row" id="histStats">
+    <div class="hist-stat-card"><div class="hist-stat-num" id="hsTotalSes">0</div><div class="hist-stat-lbl">SESIONES</div></div>
+    <div class="hist-stat-card"><div class="hist-stat-num" id="hsAvgEff">--</div><div class="hist-stat-lbl">EF. COGNITIVA PROM.</div></div>
+    <div class="hist-stat-card"><div class="hist-stat-num" id="hsAvgScore">0</div><div class="hist-stat-lbl">PUNTAJE PROM.</div></div>
+    <div class="hist-stat-card"><div class="hist-stat-num" id="hsBestEff">--</div><div class="hist-stat-lbl">MEJOR EFICIENCIA</div></div>
+  </div>
+
+  <div class="hist-filters">
+    <button class="hist-filter-btn active" id="hfAll" onclick="filterHistory('all')">TODAS</button>
+    <button class="hist-filter-btn" id="hfMine" onclick="filterHistory('mine')">MIS SESIONES</button>
+    <button class="hist-filter-btn" id="hfBest" onclick="filterHistory('best')">MEJORES (EF. &gt; 70)</button>
+    <button class="btn-sys btn-export" style="width:auto;padding:5px 14px;margin:0;font-size:9px;" onclick="exportHistoryCSV()">EXPORTAR CSV</button>
+    <button class="btn-sys" style="width:auto;padding:5px 14px;margin:0;font-size:9px;background:rgba(255,59,59,.08);border:1px solid var(--red2);color:var(--red);" onclick="clearMyHistory()">BORRAR MIS DATOS</button>
+  </div>
+
+  <div id="histContent">
+    <div class="hist-empty">No hay sesiones registradas todavía.<br><span style="color:var(--text3);font-size:11px;">Completa una sesión y guarda los resultados.</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 5 — ADMIN / PSICÓLOGO
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-admin">
+<div class="hist-container" style="max-width:1100px;">
+  <div class="hist-title">PANEL ADMIN — GESTIÓN DE USUARIOS Y SESIONES</div>
+  <div class="hist-sub tech" id="adminSubtitle">Vista global del sistema — Solo psicólogos y administradores</div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:18px;">
+    <button class="hist-filter-btn active" id="atUsers" onclick="adminTab('users')">USUARIOS REGISTRADOS</button>
+    <button class="hist-filter-btn" id="atSessions" onclick="adminTab('sessions')">TODAS LAS SESIONES</button>
+    <button class="hist-filter-btn" id="atCompare" onclick="adminTab('compare')">COMPARAR USUARIOS</button>
+  </div>
+
+  <!-- Users tab -->
+  <div id="adminUsers">
+    <div class="hist-stat-row" style="grid-template-columns:repeat(3,1fr);">
+      <div class="hist-stat-card"><div class="hist-stat-num" id="auTotalUsers">0</div><div class="hist-stat-lbl">USUARIOS TOTALES</div></div>
+      <div class="hist-stat-card"><div class="hist-stat-num" id="auTotalSes">0</div><div class="hist-stat-lbl">SESIONES TOTALES</div></div>
+      <div class="hist-stat-card"><div class="hist-stat-num" id="auAvgEff">--</div><div class="hist-stat-lbl">EFICIENCIA PROMEDIO GLOBAL</div></div>
+    </div>
+    <div id="adminUsersList"></div>
+  </div>
+
+  <!-- Sessions tab -->
+  <div id="adminSessions" style="display:none;">
+    <div id="adminSessionsTable"></div>
+  </div>
+
+  <!-- Compare tab -->
+  <div id="adminCompare" style="display:none;">
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:4px;">USUARIO A</div>
+        <select class="cfg-select" id="compareUserA" style="min-width:160px;" onchange="renderCompare()"><option value="">— Seleccionar —</option></select>
+      </div>
+      <div style="font-size:20px;color:var(--text3);padding-top:18px;">vs</div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:4px;">USUARIO B</div>
+        <select class="cfg-select" id="compareUserB" style="min-width:160px;" onchange="renderCompare()"><option value="">— Seleccionar —</option></select>
+      </div>
+    </div>
+    <div id="compareResult"></div>
+  </div>
+</div>
+</div>
+
+</div><!-- .app -->
+
+<!-- ══ SESSION DETAIL MODAL ══ -->
+<div class="modal-overlay hidden" id="detailModal">
+<div class="modal-box" style="max-width:560px;">
+  <div class="modal-title" id="detailTitle">DETALLE DE SESIÓN</div>
+  <div id="detailBody"></div>
+  <div style="text-align:right;margin-top:18px;">
+    <button class="tut-btn" onclick="document.getElementById('detailModal').classList.add('hidden')">CERRAR</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ TUTORIAL MODAL ══ -->
+<div class="modal-overlay hidden" id="tutModal">
+<div class="modal-box">
+  <div class="modal-title">TUTORIAL — COGNILITH</div>
+  <!-- step 0 -->
+  <div class="tut-step active" id="tut0">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ COGNILITH ]</div>
+    <div class="tut-h">¿QUÉ ES COGNILITH?</div>
+    <div class="tut-p">Cognilith es un sistema de simulación cognitiva que analiza tu comportamiento mientras juegas para estimar tu nivel de <strong style="color:var(--cyan)">atención</strong>, <strong style="color:var(--red)">estrés</strong> y <strong style="color:var(--amber)">carga mental</strong> en tiempo real.</div>
+    <div class="tut-p">No usa sensores ni hardware especial — todo se mide a través de <strong style="color:var(--cyan)">cómo reaccionas</strong>: qué tan rápido haces clic, qué tan preciso eres y cómo mueves el cursor.</div>
+    <div class="tut-tip"><strong>Tu comportamiento = tu señal cognitiva.</strong> Cuanto más concentrado estés, mejor serán tus métricas.</div>
+  </div>
+  <!-- step 1 -->
+  <div class="tut-step" id="tut1">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ RETOS COGNITIVOS ]</div>
+    <div class="tut-h">LOS 5 RETOS DE SIMULACIÓN</div>
+    <div class="tut-p"><strong style="color:var(--cyan)">CAPTURA DE ESTÍMULOS:</strong> Aparecen orbes cian en el entorno. Haz clic antes de que desaparezcan. El anillo exterior indica el tiempo restante. Mide tu velocidad de reacción.</div>
+    <div class="tut-p"><strong style="color:var(--green)">SECUENCIA DE MEMORIA:</strong> El sistema ilumina nodos en orden sobre una cuadrícula 3x3. Repite el patrón exacto haciendo clic. Mide memoria de trabajo.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">CONTROL INHIBITORIO:</strong> Aparecen estímulos verdes (CORRECTO) y rojos (INCORRECTO). Solo responde a los verdes. Si haces clic en el rojo, pierdes puntos. Mide control de impulsos.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">REFLEJO COGNITIVO:</strong> Entre señales distractoras aparece ocasionalmente el objetivo dorado (!). Solo ese suma puntos. Mide atención selectiva.</div>
+    <div class="tut-p"><strong style="color:var(--purple)">SEGUIMIENTO VISUAL:</strong> Un estímulo se mueve por el entorno. Mantén el cursor encima el mayor tiempo posible. Mide atención sostenida.</div>
+  </div>
+  <!-- step 2 -->
+  <div class="tut-step" id="tut2">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ MÉTRICAS ]</div>
+    <div class="tut-h">CÓMO SE MIDEN TUS MÉTRICAS</div>
+    <div class="tut-p"><strong style="color:var(--cyan)">Latencia:</strong> Tiempo entre que aparece el estímulo y tú reaccionas. Lenta = estrés o fatiga. Rápida = buena atención.</div>
+    <div class="tut-p"><strong style="color:var(--green)">Precisión:</strong> Porcentaje de aciertos sobre intentos totales. Alta precisión = control cognitivo.</div>
+    <div class="tut-p"><strong style="color:var(--amber)">Navegación:</strong> Velocidad y cantidad de movimientos del cursor. Muchos movimientos erráticos = estrés o ansiedad.</div>
+    <div class="tut-tip">Los paneles laterales se actualizan en tiempo real. El encéfalo 3D ilumina las zonas activas: <span style="color:#ff3b3b">rojo = amígdala (estrés)</span>, <span style="color:#4488ff">azul = corteza prefrontal (atención)</span>.</div>
+  </div>
+  <!-- step 3 -->
+  <div class="tut-step" id="tut3">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ CONTEXTOS ]</div>
+    <div class="tut-h">LOS CONTEXTOS DE SIMULACION</div>
+    <div class="tut-p">Cada contexto ajusta la interpretación cognitiva de tu desempeño. El sistema adapta el análisis según el propósito declarado: no es lo mismo evaluar atención para un examen académico que para operar maquinaria industrial.</div>
+    <div class="tut-p">CALMA Y FOCO — ENTREVISTA DE TRABAJO — OPERACION DE MAQUINARIA — EXAMEN DE CONDUCCION — EXAMEN ACADEMICO — ALTA CARGA Y ESTRES</div>
+    <div class="tut-tip">El contexto seleccionado queda registrado en el reporte final como estado emocional declarado por el usuario al inicio de la sesion.</div>
+  </div>
+  <!-- step 4 -->
+  <div class="tut-step" id="tut4">
+    <div class="tut-icon" style="font-size:32px;text-align:center;margin-bottom:12px;">[ REPORTE ]</div>
+    <div class="tut-h">EL REPORTE FINAL</div>
+    <div class="tut-p">Al terminar la sesión verás un <strong style="color:var(--cyan)">dashboard completo</strong> con: eficiencia cognitiva global (0-100), mapa de activación cerebral, métricas detalladas de latencia/precisión/navegación, puntuación del juego, recomendaciones clínicas generadas automáticamente y opción de exportar el informe como archivo JSON.</div>
+    <div class="tut-tip">El reporte <strong>NO es un diagnóstico médico</strong>. Es una representación del desempeño conductual durante la sesión, como apoyo al análisis del profesional clínico.</div>
+  </div>
+  <!-- nav -->
+  <div class="tut-nav">
+    <div class="tut-dots" id="tutDots"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="tut-btn" id="tutBack" onclick="tutNav(-1)" style="display:none;">← ATRÁS</button>
+      <button class="tut-btn amber" id="tutNext" onclick="tutNav(1)">SIGUIENTE →</button>
+      <button class="tut-btn" id="tutSkip" onclick="closeTutorial()">SALTAR</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+const S = {
+  running:false, paused:false, time:0,
+  attention:50, stress:20, load:40,
+  latency:1.5, precision:75, nav:15,
+  difficulty:'media',
+  evalMode:'libre', feedbackAmbiental:'activado',
+  baseline:{attention:50,stress:20,load:40},
+  calib:{latRef:1.5, latAlto:2.0, stressAlerta:65, loadAlerta:68, attLow:35},
+  userName:'Usuario', sessionType:'Mindfulness',
+  scenario:'bosque',
+  timerInterval:null, animInterval:null,
+  history:{attention:[],stress:[],load:[],latency:[],precision:[]},
+};
+const G = {
+  active:false, gameIdx:0, score:0, hits:0, misses:0, totalTrials:0,
+  reactionTimes:[], lastSpawn:0, spawnInterval:1800,
+  targets:[], seqPattern:[], seqInput:[],
+  seqPhase:'show', seqIdx:0,
+  trackTarget:null, trackOnTarget:false, trackTime:0,
+  flashMsg:'', flashAlpha:0, flashX:0, flashY:0, flashColor:'#fff',
+  combo:0, gameIdx:0, countdownVal:0, countdownActive:false,
+  nextGameAt:0,
+};
+let _tid=0;
+
+const GAMES=[
+  {id:'targets',  name:'Captura de Estímulos',  desc:'¡Clic en los orbes CIAN antes de que se agote el tiempo!',    color:'#00e5ff'},
+  {id:'sequence', name:'Secuencia de Memoria',   desc:'Memoriza el orden de los nodos y repítelo haciendo clic.',    color:'#44ff88'},
+  {id:'inhibit',  name:'Control Inhibitorio',    desc:'Clic en VERDE OK: — ignora el ROJO ✗ o pierdes puntos.',       color:'#ffaa00'},
+  {id:'reflex',   name:'Reflejo Cognitivo',      desc:'¡Solo el orbe DORADO (!) vale puntos! Ignora los rojos.',    color:'#ffdd00'},
+  {id:'track',    name:'Seguimiento Visual',     desc:'Mantén el cursor ENCIMA del orbe en movimiento.',            color:'#aa66ff'},
+];
+
+// Pistas habladas y escritas que solo se muestran en MODO EVALUACIÓN = GUIADO
+const HINTS={
+  targets:'Pista: haz clic apenas aparezca el orbe, no esperes a que crezca el anillo.',
+  sequence:'Pista: memoriza el orden con calma antes de repetirlo, no hay apuro.',
+  inhibit:'Pista: solo el verde suma puntos, ignora el rojo aunque te tiente.',
+  reflex:'Pista: solo el orbe dorado vale, los demás son señuelos.',
+  track:'Pista: sigue el orbe morado con movimientos suaves del cursor.',
+};
+
+const SCENARIOS={
+  bosque:    {sky:['#010810','#030f1e','#051a2e'], fog:'rgba(0,50,80,',   ground:'#031420', tree:'rgba(0,220,255,',   part:[0,229,255],  label:'BOSQUE NOCTURNO',    envType:'forest'},
+  entrevista:{sky:['#050810','#0a1020','#101828'], fog:'rgba(10,30,70,',  ground:'#060e18', tree:'rgba(80,160,255,',  part:[68,136,255], label:'SALA DE REUNIONES',  envType:'office'},
+  maquinaria:{sky:['#050a05','#0a1505','#102010'], fog:'rgba(0,60,30,',   ground:'#041008', tree:'rgba(0,255,120,',   part:[0,220,100],  label:'PLANTA INDUSTRIAL',  envType:'factory'},
+  conduccion:{sky:['#080810','#101020','#181830'], fog:'rgba(40,40,120,', ground:'#080812', tree:'rgba(120,100,255,', part:[100,80,255],  label:'CARRETERA NOCTURNA', envType:'road'},
+  examen:    {sky:['#080808','#101010','#181818'], fog:'rgba(80,80,80,',  ground:'#101010', tree:'rgba(160,160,255,', part:[140,100,255], label:'SALÓN DE CLASES',    envType:'classroom'},
+  estres:    {sky:['#100505','#200808','#300a0a'], fog:'rgba(120,30,30,', ground:'#180505', tree:'rgba(255,100,50,',  part:[255,80,50],   label:'TORMENTA ELÉCTRICA', envType:'storm'},
+  ciudad:    {sky:['#050508','#0a0a12','#101018'], fog:'rgba(60,50,20,',  ground:'#060608', tree:'rgba(255,180,50,',  part:[255,160,40],  label:'CIUDAD NOCTURNA',    envType:'city'},
+  hospital:  {sky:['#080a0a','#0d1212','#101818'], fog:'rgba(30,80,80,',  ground:'#080e0e', tree:'rgba(0,200,180,',   part:[0,200,200],   label:'ENTORNO CLÍNICO',    envType:'hospital'},
+  deporte:   {sky:['#050808','#0a1010','#0f1818'], fog:'rgba(20,60,40,',  ground:'#050a08', tree:'rgba(80,255,120,',  part:[60,255,100],  label:'ESTADIO DEPORTIVO',  envType:'stadium'},
+};
+
+const SCENARIO_LABELS={
+  bosque:    'Calma y Foco — Bienestar / Mindfulness',
+  entrevista:'Entrevista de Trabajo — Presión Social',
+  maquinaria:'Operación de Maquinaria — Seguridad Laboral',
+  conduccion:'Conducción Vehicular — Habilidad Vial',
+  examen:    'Examen Académico — Rendimiento / Memoria',
+  estres:    'Alta Carga y Estrés — Resiliencia',
+  ciudad:    'Ciudad Nocturna — Estimulación Alta',
+  hospital:  'Entorno Clínico — Control Emocional',
+  deporte:   'Rendimiento Deportivo — Competencia',
+};
+
+// ════════════════════════════════════════════
+//  WEB AUDIO ENGINE — AMBIENT SOUND
+// ════════════════════════════════════════════
+let audioCtx=null, audioNodes=[], audioRunning=false, ambientMaster=null;
+let musicEnabled = localStorage.getItem('cognilith_music')!=='off';
+
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function stopAudio(){
+  audioNodes.forEach(n=>{try{n.stop();}catch(e){}});
+  audioNodes=[];
+  audioRunning=false;
+  ambientMaster=null;
+}
+
+function updateMusicBtn(){
+  const b=document.getElementById('musicToggleBtn');
+  if(!b) return;
+  b.textContent = musicEnabled ? '🔊 MÚSICA' : '🔇 MÚSICA';
+  b.classList.toggle('music-off',!musicEnabled);
+}
+
+function toggleMusic(){
+  musicEnabled=!musicEnabled;
+  localStorage.setItem('cognilith_music',musicEnabled?'on':'off');
+  updateMusicBtn();
+  if(!musicEnabled){
+    stopAudio();
+    notify('Música ambiental desactivada.','info');
+  } else {
+    notify('Música ambiental activada.','info');
+    if(S.running&&!S.paused) startAmbientSound(S.scenario);
+  }
+}
+
+function setEvalMode(v){
+  S.evalMode=v;
+  const msgs={
+    libre:'Modo Libre: la dificultad se adapta automáticamente a tu desempeño.',
+    guiado:'Modo Guiado activo: más tiempo de respuesta, blancos más grandes y pistas habladas.',
+    diagnostico:'Modo Diagnóstico: dificultad fija en MEDIA para estandarizar la medición.'
+  };
+  notify(msgs[v]||'Modo de evaluación actualizado.','info');
+}
+
+function setFeedbackAmbiental(v){
+  S.feedbackAmbiental=v;
+  const msgs={
+    activado:'Feedback ambiental activado: el entorno y el sonido reaccionan a tu estado cognitivo.',
+    visual:'Solo feedback visual: el entorno reacciona, el sonido ambiental se mantiene estable.',
+    desactivado:'Feedback ambiental desactivado: entorno y sonido neutros, sin reacción al estado cognitivo.'
+  };
+  notify(msgs[v]||'Feedback ambiental actualizado.','info');
+  updateAmbientSound();
+}
+
+function startAmbientSound(scenario){
+  stopAudio();
+  if(!musicEnabled) return;
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  audioRunning=true;
+  const master=ctx.createGain();
+  // Very soft — ambient only, not intrusive
+  master.gain.setValueAtTime(0.06,ctx.currentTime);
+  master.connect(ctx.destination);
+  ambientMaster=master;
+
+  // Reverb tail for spaciousness
+  function makeReverb(seconds){
+    const len=ctx.sampleRate*seconds;
+    const buf=ctx.createBuffer(2,len,ctx.sampleRate);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);}
+    const conv=ctx.createConvolver(); conv.buffer=buf;
+    return conv;
+  }
+  const reverb=makeReverb(1.5);
+  reverb.connect(master);
+
+  function makeNoise(dur){
+    const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+    return src;
+  }
+  function osc(freq,type,gain,useReverb){
+    const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    g.gain.value=gain||0.03;
+    o.connect(g);
+    if(useReverb) g.connect(reverb); else g.connect(master);
+    o.start(); audioNodes.push(o);
+    return {o,g};
+  }
+  function filteredNoise(lo,hi,gain,useReverb){
+    const src=makeNoise(2);
+    const fLo=ctx.createBiquadFilter(); fLo.type='highpass'; fLo.frequency.value=lo;
+    const fHi=ctx.createBiquadFilter(); fHi.type='lowpass';  fHi.frequency.value=hi;
+    const g=ctx.createGain(); g.gain.value=gain||0.08;
+    src.connect(fLo); fLo.connect(fHi); fHi.connect(g);
+    if(useReverb) g.connect(reverb); else g.connect(master);
+    src.start(); audioNodes.push(src);
+    return {src,g};
+  }
+
+  if(scenario==='bosque'){
+    // Soft wind — very low
+    filteredNoise(60,400,0.07,true);
+    // Gentle cricket tone — soft LFO
+    const cricket=osc(3800,'sine',0.02,true);
+    const lfo=ctx.createOscillator(); lfo.frequency.value=4;
+    const lfoG=ctx.createGain(); lfoG.gain.value=0.015;
+    lfo.connect(lfoG); lfoG.connect(cricket.g.gain);
+    lfo.start(); audioNodes.push(lfo);
+    // Very subtle stream
+    filteredNoise(180,700,0.04,true);
+  }
+  else if(scenario==='entrevista'){
+    // Soft AC hum
+    osc(110,'sine',0.025,false);
+    // Occasional soft keyboard
+    function typingTick(){
+      if(!audioRunning) return;
+      const buf=ctx.createBuffer(1,ctx.sampleRate*0.015,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length)*0.5;
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1400;
+      const g=ctx.createGain(); g.gain.value=0.04;
+      src.connect(f); f.connect(g); g.connect(reverb); src.start();
+      setTimeout(typingTick, 200+Math.random()*600);
+    }
+    typingTick();
+    filteredNoise(80,350,0.03,false);
+  }
+  else if(scenario==='maquinaria'){
+    // Low mechanical drone
+    osc(55,'sawtooth',0.04,false);
+    osc(110,'sawtooth',0.02,false);
+    // Soft metal clank
+    function clank(){
+      if(!audioRunning) return;
+      const buf=ctx.createBuffer(1,ctx.sampleRate*0.04,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/400)*0.6;
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=600; f.Q.value=1;
+      const g=ctx.createGain(); g.gain.value=0.12;
+      src.connect(f); f.connect(g); g.connect(reverb); src.start();
+      setTimeout(clank, 800+Math.random()*1200);
+    }
+    clank();
+    filteredNoise(30,200,0.06,false);
+  }
+  else if(scenario==='conduccion'){
+    // Engine drone — soft
+    osc(70,'sawtooth',0.04,false);
+    // Wind rush
+    filteredNoise(250,1500,0.07,false);
+    // Road rumble
+    filteredNoise(25,80,0.05,false);
+    // Passing car — engine pitch sweep (Doppler-like) + tire whoosh
+    function passingCar(){
+      if(!audioRunning) return;
+      const dur=1.5+Math.random()*0.9;
+      const baseFreq=85+Math.random()*45;
+      const o=ctx.createOscillator(); const g=ctx.createGain();
+      o.type='sawtooth';
+      o.frequency.setValueAtTime(baseFreq*0.6,ctx.currentTime);
+      o.frequency.linearRampToValueAtTime(baseFreq*1.3,ctx.currentTime+dur*0.45);
+      o.frequency.linearRampToValueAtTime(baseFreq*0.5,ctx.currentTime+dur);
+      g.gain.setValueAtTime(0,ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.09,ctx.currentTime+dur*0.4);
+      g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+      const fEng=ctx.createBiquadFilter(); fEng.type='lowpass'; fEng.frequency.value=900;
+      o.connect(fEng); fEng.connect(g); g.connect(master);
+      o.start(); o.stop(ctx.currentTime+dur+0.1); audioNodes.push(o);
+      // Tire/wind whoosh layered under the engine
+      const whoosh=makeNoise(dur);
+      const fW=ctx.createBiquadFilter(); fW.type='bandpass'; fW.frequency.value=1000; fW.Q.value=0.6;
+      const gW=ctx.createGain();
+      gW.gain.setValueAtTime(0,ctx.currentTime);
+      gW.gain.linearRampToValueAtTime(0.07,ctx.currentTime+dur*0.4);
+      gW.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+      whoosh.connect(fW); fW.connect(gW); gW.connect(master);
+      whoosh.start(); whoosh.stop(ctx.currentTime+dur+0.1); audioNodes.push(whoosh);
+      setTimeout(passingCar,2500+Math.random()*4500);
+    }
+    setTimeout(passingCar,1200+Math.random()*2000);
+    // Occasional horn — more frequent if the driver is under high stress
+    function carHorn(){
+      if(!audioRunning) return;
+      const stressBoost=S.running?S.stress/100:0;
+      if(Math.random()<0.32+stressBoost*0.2){
+        const o1=ctx.createOscillator(); const o2=ctx.createOscillator(); const g=ctx.createGain();
+        o1.type='square'; o1.frequency.value=380; o2.type='square'; o2.frequency.value=475;
+        g.gain.setValueAtTime(0,ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.05,ctx.currentTime+0.04);
+        g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.32);
+        o1.connect(g); o2.connect(g); g.connect(master);
+        o1.start(); o2.start(); o1.stop(ctx.currentTime+.4); o2.stop(ctx.currentTime+.4);
+        audioNodes.push(o1,o2);
+      }
+      setTimeout(carHorn,6000+Math.random()*8000);
+    }
+    setTimeout(carHorn,4000+Math.random()*4000);
+  }
+  else if(scenario==='examen'){
+    // Near silence — just a hint of room tone
+    filteredNoise(80,300,0.02,true);
+    // Rare page turn
+    function pageTurn(){
+      if(!audioRunning) return;
+      const buf=ctx.createBuffer(1,ctx.sampleRate*0.06,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/600)*0.4;
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const g=ctx.createGain(); g.gain.value=0.06;
+      src.connect(g); g.connect(reverb); src.start();
+      setTimeout(pageTurn, 6000+Math.random()*10000);
+    }
+    pageTurn();
+  }
+  else if(scenario==='estres'){
+    // Low thunder rumble
+    filteredNoise(18,100,0.1,false);
+    // Wind howl
+    filteredNoise(400,1400,0.06,true);
+    // Thunder clap — less frequent
+    function thunder(){
+      if(!audioRunning) return;
+      const buf=ctx.createBuffer(1,ctx.sampleRate*0.35,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*0.12))*0.7;
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=250;
+      const g=ctx.createGain(); g.gain.value=0.25;
+      src.connect(f); f.connect(g); g.connect(master); src.start();
+      setTimeout(thunder, 5000+Math.random()*9000);
+    }
+    thunder();
+  }
+  else if(scenario==='ciudad'){
+    filteredNoise(80,600,0.06,false);
+    filteredNoise(40,150,0.05,false);
+    function horn(){
+      if(!audioRunning) return;
+      if(Math.random()<0.25){
+        const o=ctx.createOscillator(); const g=ctx.createGain();
+        o.type='sine'; o.frequency.value=380+Math.random()*200;
+        g.gain.setValueAtTime(0,ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.06,ctx.currentTime+0.06);
+        g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.35);
+        o.connect(g); g.connect(master); o.start(); audioNodes.push(o);
+        setTimeout(()=>{try{o.stop();}catch(e){}},500);
+      }
+      setTimeout(horn, 3000+Math.random()*7000);
+    }
+    horn();
+  }
+  else if(scenario==='hospital'){
+    // EKG beep — calm rhythm
+    function beep(){
+      if(!audioRunning) return;
+      const o=ctx.createOscillator(); const g=ctx.createGain();
+      o.type='sine'; o.frequency.value=800;
+      g.gain.setValueAtTime(0,ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.05,ctx.currentTime+0.02);
+      g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.07);
+      o.connect(g); g.connect(reverb); o.start(); audioNodes.push(o);
+      setTimeout(()=>{try{o.stop();}catch(e){}},200);
+      setTimeout(beep, 880+Math.random()*40);
+    }
+    beep();
+    filteredNoise(150,450,0.03,false);
+  }
+  else if(scenario==='deporte'){
+    // Crowd — low and distant
+    filteredNoise(150,1200,0.08,true);
+    filteredNoise(60,200,0.06,false);
+    function chant(){
+      if(!audioRunning) return;
+      const buf=ctx.createBuffer(1,ctx.sampleRate*0.12,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*0.35;
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=400; f.Q.value=0.4;
+      const g=ctx.createGain(); g.gain.value=0.12;
+      src.connect(f); f.connect(g); g.connect(reverb); src.start();
+      setTimeout(chant, 600+Math.random()*300);
+    }
+    chant();
+  }
+}
+
+// Update sound volume dynamically based on cognitive state and FEEDBACK AMBIENTAL mode
+function updateAmbientSound(){
+  if(!audioCtx||!audioRunning||!ambientMaster) return;
+  const fbMode=S.feedbackAmbiental||'activado';
+  let target=0.06;
+  if(fbMode==='activado'){
+    // El estrés intensifica el ambiente sonoro; la alta eficiencia lo serena
+    target=0.05+(S.stress/100)*0.07-(S.attention/100)*0.015;
+    target=Math.max(0.03,Math.min(0.16,target));
+  } else if(fbMode==='visual'){
+    target=0.07; // Volumen estable — solo el entorno visual reacciona
+  } else {
+    target=0.06; // Desactivado — sin reacción, volumen neutro
+  }
+  try{ ambientMaster.gain.linearRampToValueAtTime(target,audioCtx.currentTime+0.6); }catch(e){}
+}
+
+// ════════════════════════════════════════════
+//  NAVIGATION & UTILS
+// ════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.phase-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('btn-'+id);
+  if(btn) btn.classList.add('active');
+  if(id==='calib') { 
+    const nombreInput = document.getElementById('userName');
+    actualizarNombre(nombreInput.value);
+    updateCalibDisplay(); 
+  }
+  if(id==='results') renderResults();
+  if(id==='history') renderHistory();
+  if(id==='admin') renderAdmin();
+}
+function notify(msg,type='info'){
+  const n=document.getElementById('notif');
+  n.textContent=msg; n.className='notif show '+(type==='danger'?'danger':type==='warn'?'warn':'');
+  setTimeout(()=>n.classList.remove('show'),3500);
+}
+
+// ════════════════════════════════════════════
+//  TUTORIAL
+// ════════════════════════════════════════════
+let tutStep=0; const TUT_TOTAL=5;
+function openTutorial(){
+  tutStep=0; renderTut();
+  document.getElementById('tutModal').classList.remove('hidden');
+}
+function closeTutorial(){document.getElementById('tutModal').classList.add('hidden');}
+function tutNav(d){
+  tutStep=Math.max(0,Math.min(TUT_TOTAL-1,tutStep+d));
+  renderTut();
+  if(tutStep===TUT_TOTAL-1&&d===1) closeTutorial();
+}
+function renderTut(){
+  for(let i=0;i<TUT_TOTAL;i++){
+    const el=document.getElementById('tut'+i);
+    if(el) el.classList.toggle('active',i===tutStep);
+  }
+  document.getElementById('tutBack').style.display=tutStep>0?'':'none';
+  document.getElementById('tutNext').textContent=tutStep>=TUT_TOTAL-1?'¡ENTENDIDO! OK:':'SIGUIENTE →';
+  // dots
+  const dots=document.getElementById('tutDots');
+  dots.innerHTML=Array.from({length:TUT_TOTAL},(_,i)=>`<div class="tut-dot${i===tutStep?' active':''}"></div>`).join('');
+}
+
+function selectScenario(card,id){
+  document.querySelectorAll('.sc-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  S.scenario=id;
+  S.sessionType=SCENARIO_LABELS[id]||id;
+}
+// Valores globales para botones
+let calibVals={sens:5, vel:1400, tol:5};
+
+function actualizarNombre(valor){
+  const nombre = valor || 'Usuario';
+  document.getElementById('nombreRegistrado').textContent = nombre.toUpperCase();
+}
+
+function setCalib(tipo, val){
+  calibVals[tipo]=val;
+  
+  // Actualizar estilos de botones
+  const btns=document.querySelectorAll('[id^="btn-"]');
+  btns.forEach(b=>b.style.borderColor='var(--border)');
+  btns.forEach(b=>b.style.background='rgba(0,229,255,.08)');
+  btns.forEach(b=>b.style.color='var(--text2)');
+  
+  const btnId='btn-'+tipo+'-'+(tipo==='sens'?(val<4?'bajo':val<7?'medio':'alto'):(tipo==='vel'?(val<1200?'rapido':val<1700?'normal':'lento'):(val<3?'bajo':val<8?'medio':'alto')));
+  const btn=document.getElementById(btnId);
+  if(btn){
+    btn.style.borderColor='var(--cyan)';
+    btn.style.background='rgba(0,229,255,.15)';
+    btn.style.color='var(--cyan)';
+  }
+  
+  // MOSTRAR DESCRIPCIÓN DINÁMICA
+  mostrarDescripcion(tipo, val);
+  updateCalibDisplay();
+}
+
+function mostrarDescripcion(tipo, val){
+  const descMap={
+    sens:{
+      3:{texto:'No te distraen fácilmente. Puedes mantener la concentración incluso con muchos estímulos visuales.', div:'desc-sens'},
+      5:{texto:'Tu reactividad es normal. Los cambios visuales capturan tu atención de forma típica.', div:'desc-sens'},
+      8:{texto:'Te distraen fácilmente los destellos y cambios visuales. Necesitas entornos más calmos.', div:'desc-sens'}
+    },
+    vel:{
+      900:{texto:'Respondes muy rápido, en menos de 1 segundo. Tus reflejos son muy ágiles.', div:'desc-vel'},
+      1400:{texto:'Tu tiempo de respuesta es típico (1-1.5 segundos). Normal para adultos.', div:'desc-vel'},
+      1900:{texto:'Respondes más lentamente. Prefieres pensar antes de actuar; buscas exactitud.', div:'desc-vel'}
+    },
+    tol:{
+      2:{texto:'La presión te afecta rápidamente. Necesitas ambientes tranquilos para funcionar bien.', div:'desc-tol'},
+      5:{texto:'Manejas la presión de forma típica. Equilibrio normal entre estrés y rendimiento.', div:'desc-tol'},
+      9:{texto:'Eres muy resiliente. Incluso bajo mucha presión, te mantienes tranquilo y enfocado.', div:'desc-tol'}
+    }
+  };
+  
+  const desc = descMap[tipo] && descMap[tipo][val];
+  if(desc){
+    const descDiv = document.getElementById(desc.div);
+    if(descDiv){
+      descDiv.style.display='block';
+      document.getElementById(desc.div + '-text').textContent = desc.texto;
+    }
+  }
+}
+
+function updateCalibDisplay(){
+  // Mostrar línea base automáticamente
+  const sv=calibVals.sens;
+  const um=calibVals.tol;
+  const at=Math.round(40+sv*3);
+  const es=Math.round(28-um*1.6);
+  const lg=Math.round(35+sv*2);
+  document.getElementById('baseAt').textContent=at;
+  document.getElementById('baseEs').textContent=es;
+  document.getElementById('baseCg').textContent=lg;
+  
+  // Guardar en sessionStorage para resultados
+  sessionStorage.setItem('baselineAttention', at);
+  sessionStorage.setItem('baselineStress', es);
+  sessionStorage.setItem('baselineLoad', lg);
+}
+
+function updateCalib(){
+  // Esta función ya no se usa con botones
+}
+function startCalibration(){
+  const btn=document.getElementById('calibBtn');
+  btn.textContent='CALIBRANDO...'; btn.style.color='var(--amber)'; btn.style.borderColor='var(--amber)';
+  S.userName=document.getElementById('userName').value||'Usuario';
+  S.sessionType=SCENARIO_LABELS[S.scenario]||S.scenario;
+  // Update context label in game panel
+  const cl=document.getElementById('contextLabel');
+  if(cl) cl.textContent=SCENARIO_LABELS[S.scenario]||S.scenario;
+  const sv=calibVals.sens;
+  const rb=calibVals.vel;
+  const um=calibVals.tol;
+  const steps=['Analizando línea base...','Registrando latencia base...','Calculando umbrales...',''];
+  let t=0;
+  const iv=setInterval(()=>{
+    btn.textContent=steps[t]||'CALIBRACIÓN COMPLETA OK:';
+    if(t>=steps.length){
+      clearInterval(iv);
+      // ── Fórmula de línea base ──
+      // Atención y Carga: a mayor sensibilidad visual (sv, 1-10), mayor activación basal.
+      // Estrés: a mayor tolerancia personal declarada (um, 1-10), menor estrés basal
+      //   (relación inversa: tolerancia alta = tu cuerpo necesita más estímulo para reaccionar).
+      S.baseline.attention=40+sv*3;
+      S.baseline.stress=Math.round(28-um*1.6);
+      S.baseline.load=35+sv*2;
+      S.attention=S.baseline.attention; S.stress=S.baseline.stress; S.load=S.baseline.load;
+      // ── Umbrales personalizados derivados de la calibración ──
+      // Se usan después, durante el juego, en vez de números fijos iguales para todos.
+      S.calib={
+        latRef: rb/1000,                       // s — tu tiempo de reacción esperado
+        latAlto: (rb/1000)*1.35,                // s — a partir de aquí, tu latencia se marca "alta" para TI
+        stressAlerta: 55+um*3,                  // a mayor tolerancia (um), el umbral de alerta sube
+        loadAlerta: 58+um*2.4,
+        attLow: Math.max(20,30-um)              // umbral bajo de atención, ligeramente más permisivo si tu tolerancia es alta
+      };
+      const setB=(id,v,c)=>{const el=document.getElementById(id);el.textContent=v;el.style.color=c;};
+      setB('baseAt',S.baseline.attention,'var(--cyan)');
+      setB('baseEs',S.baseline.stress,'var(--green)');
+      setB('baseCg',S.baseline.load,'var(--amber)');
+      btn.textContent='CONTINUAR → VER TUTORIAL'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)';
+      btn.onclick=()=>{ openTutorial(); btn.textContent='IR AL JUEGO →'; btn.onclick=goToGame; };
+      notify('Calibración completada. Contexto: '+SCENARIO_LABELS[S.scenario]);
+    }
+    t++;
+  },650);
+}
+function goToGame(){
+  showScreen('game');
+  document.getElementById('btn-game').classList.add('done');
+}
+
+// ════════════════════════════════════════════
+//  GAME CONTROL
+// ════════════════════════════════════════════
+function iniciarSesion(){
+  if(S.running) return;
+  S.running=true; S.paused=false; S.time=0;
+  G.active=false; G.score=0; G.hits=0; G.misses=0; G.totalTrials=0;
+  G.reactionTimes=[]; G.targets=[]; G.combo=0; G.gameIdx=0; G.countdownActive=false;
+  G.trackTarget=null; G.trackTime=0;
+  document.getElementById('statusText').textContent='SESION ACTIVA';
+  document.getElementById('statusDot').className='status-dot';
+  startAmbientSound(S.scenario);
+  startTimer(); startSimulation(); startMinigameLoop();
+  launchCountdown(GAMES[0]);
+  notify('¡Sesión iniciada! Juego adaptativo activo.');
+}
+function pausarSesion(){
+  if(!S.running) return;
+  S.paused=!S.paused;
+  document.getElementById('btnPausar').textContent=S.paused?'REANUDAR':'PAUSAR';
+  document.getElementById('statusText').textContent=S.paused?'PAUSA':'SESIÓN ACTIVA';
+  if(!S.paused) notify('Sesión reanudada.');
+}
+function toggleGame(){
+  if(!S.running){iniciarSesion();return;}
+  pausarSesion();
+  document.getElementById('playBtn').textContent=S.paused?'CONTINUAR SIMULACION':'PAUSAR SIMULACION';
+}
+function exportarReporte(){
+  notify('Exportando reporte...','info');
+  showScreen('results'); renderResults();
+}
+function guardarResultados(){
+  if(!currentUser){notify('Debes iniciar sesión para guardar.','danger');return;}
+  const avg=n=>arr=>+(arr.slice(-n).reduce((a,b)=>a+b,0)/Math.max(1,n)).toFixed(2);
+  const aA=Math.round(avg(40)(S.history.attention));
+  const aE=Math.round(avg(40)(S.history.stress));
+  const aC=Math.round(avg(40)(S.history.load));
+  const aP=Math.round(avg(25)(S.history.precision));
+  const aL=avg(25)(S.history.latency);
+  const eff=Math.round(Math.max(0,Math.min(100,(aA*.45)+(Math.max(0,100-aE)*.30)+(Math.max(0,100-aC)*.25))));
+  const record={
+    id:'ses_'+Date.now(),
+    usuario:currentUser.usuario,
+    nombreCompleto:currentUser.nombre,
+    sesion:S.sessionType,
+    escenario:S.scenario,
+    modoEvaluacion:S.evalMode,
+    feedbackAmbiental:S.feedbackAmbiental,
+    duracion:document.getElementById('resDur').textContent,
+    puntuacion:G.score,
+    aciertos:G.hits,
+    intentos:G.totalTrials,
+    eficiencia:eff,
+    metricas:{atencion:aA,estres:aE,carga:aC,latencia:aL,precision:aP},
+    recomendaciones:[],
+    timestamp:new Date().toISOString(),
+    fecha:new Date().toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+  };
+  // build recs text
+  const recs=[];
+  if(aE>65) recs.push('Signos de estrés elevado — se recomienda intervención');
+  if(aC>65) recs.push('Carga mental alta — evaluar demanda de tareas');
+  if(aA<40) recs.push('Atención inconsistente — explorar técnicas de foco');
+  if(aP<55) recs.push('Precisión reducida — posible fatiga cognitiva');
+  if(recs.length===0) recs.push('Desempeño dentro de parámetros esperados');
+  record.recomendaciones=recs;
+
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  all.unshift(record);
+  localStorage.setItem('cognilith_sessions',JSON.stringify(all));
+  notify('✓ Resultados guardados en historial.','info');
+  document.querySelector('[onclick="guardarResultados()"]').textContent='✓ GUARDADO';
+}
+
+// ════════════════════════════════════════════
+//  AUTH SYSTEM
+// ════════════════════════════════════════════
+let currentUser=null;
+
+function initDefaultUsers(){
+  if(localStorage.getItem('cognilith_users')) return;
+  const defaults=[
+    {usuario:'demo',password:'demo123',nombre:'Usuario Demo'},
+  ];
+  localStorage.setItem('cognilith_users',JSON.stringify(defaults));
+}
+
+function switchLoginTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('formLogin').classList.toggle('hidden',tab!=='login');
+  document.getElementById('formRegister').classList.toggle('hidden',tab!=='register');
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('registerErr').textContent='';
+}
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  if(!u||!p){document.getElementById('loginErr').textContent='Completa todos los campos.';return;}
+  const users=JSON.parse(localStorage.getItem('cognilith_users')||'[]');
+  const found=users.find(x=>x.usuario===u&&x.password===p);
+  if(!found){document.getElementById('loginErr').textContent='Usuario o contraseña incorrectos.';return;}
+  currentUser=found;
+  sessionStorage.setItem('cognilith_current',JSON.stringify(found));
+  document.getElementById('loginOverlay').classList.add('hidden');
+  updateUserBadge();
+  notify('¡Bienvenido, '+found.nombre.split(' ')[0]+'!');
+}
+
+function doRegister(){
+  const nombre=document.getElementById('regName').value.trim();
+  const u=document.getElementById('regUser').value.trim();
+  const p=document.getElementById('regPass').value;
+  if(!nombre||!u||!p){document.getElementById('registerErr').textContent='Completa todos los campos.';return;}
+  if(p.length<4){document.getElementById('registerErr').textContent='La contraseña debe tener al menos 4 caracteres.';return;}
+  const users=JSON.parse(localStorage.getItem('cognilith_users')||'[]');
+  if(users.find(x=>x.usuario===u)){document.getElementById('registerErr').textContent='Ese nombre de usuario ya existe.';return;}
+  const newUser={usuario:u,password:p,nombre:nombre};
+  users.push(newUser);
+  localStorage.setItem('cognilith_users',JSON.stringify(users));
+  currentUser=newUser;
+  sessionStorage.setItem('cognilith_current',JSON.stringify(newUser));
+  document.getElementById('loginOverlay').classList.add('hidden');
+  updateUserBadge();
+  notify('¡Cuenta creada! Bienvenido, '+nombre.split(' ')[0]+'.');
+}
+
+function doLogout(){
+  currentUser=null;
+  sessionStorage.removeItem('cognilith_current');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').textContent='';
+}
+
+function updateUserBadge(){
+  if(!currentUser) return;
+  const initials=currentUser.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('userAvatar').textContent=initials;
+  document.getElementById('userNameBadge').textContent=currentUser.nombre.split(' ')[0];
+  document.getElementById('userRoleBadge').textContent='USUARIO';
+  // Admin tab: anyone can see history, hide admin tab always for simplicity
+  const adminBtn=document.getElementById('btn-admin');
+  if(adminBtn) adminBtn.style.display='none';
+}
+
+// ════════════════════════════════════════════
+//  ADMIN PANEL
+// ════════════════════════════════════════════
+let adminCurrentTab='users';
+
+function adminTab(tab){
+  adminCurrentTab=tab;
+  ['users','sessions','compare'].forEach(t=>{
+    const btn=document.getElementById('at'+t.charAt(0).toUpperCase()+t.slice(1));
+    const pane=document.getElementById('admin'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn) btn.classList.toggle('active',t===tab);
+    if(pane) pane.style.display=t===tab?'block':'none';
+  });
+  renderAdmin();
+}
+
+function renderAdmin(){
+  if(!currentUser||(currentUser.rol!=='psicologo'&&currentUser.rol!=='admin')) return;
+  const allUsers=JSON.parse(localStorage.getItem('cognilith_users')||'[]');
+  const allSessions=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+
+  // Stats
+  document.getElementById('auTotalUsers').textContent=allUsers.filter(u=>u.rol==='paciente').length;
+  document.getElementById('auTotalSes').textContent=allSessions.length;
+  const avgEff=allSessions.length?Math.round(allSessions.reduce((a,b)=>a+b.eficiencia,0)/allSessions.length):0;
+  document.getElementById('auAvgEff').textContent=avgEff+'%';
+
+  if(adminCurrentTab==='users') renderAdminUsers(allUsers,allSessions);
+  if(adminCurrentTab==='sessions') renderAdminSessions(allSessions);
+  if(adminCurrentTab==='compare') renderAdminCompareSelects(allUsers);
+}
+
+function renderAdminUsers(users,sessions){
+  const patients=users.filter(u=>u.rol==='paciente');
+  if(!patients.length){
+    document.getElementById('adminUsersList').innerHTML='<div class="hist-empty">No hay pacientes registrados todavía.</div>';
+    return;
+  }
+  document.getElementById('adminUsersList').innerHTML=`
+  <table class="hist-table">
+    <thead><tr>
+      <th>Usuario</th><th>Nombre Completo</th><th>Sesiones</th><th>Ef. Prom.</th><th>Mejor Ef.</th><th>Última Sesión</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>${patients.map(u=>{
+      const uSes=sessions.filter(s=>s.usuario===u.usuario);
+      const avgEff=uSes.length?Math.round(uSes.reduce((a,b)=>a+b.eficiencia,0)/uSes.length):0;
+      const bestEff=uSes.length?Math.max(...uSes.map(s=>s.eficiencia)):0;
+      const last=uSes[0]?.fecha||'—';
+      const effColor=avgEff>=70?'var(--green)':avgEff>=45?'var(--amber)':'var(--red)';
+      return `<tr>
+        <td style="color:var(--cyan2);font-family:'Orbitron',monospace;font-size:10px;">${u.usuario}</td>
+        <td>${u.nombre}</td>
+        <td style="text-align:center;"><span class="hist-score-pill">${uSes.length}</span></td>
+        <td><span style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:${effColor}">${avgEff?avgEff+'%':'—'}</span></td>
+        <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--cyan)">${bestEff?bestEff+'%':'—'}</td>
+        <td style="font-size:10px;color:var(--text3);">${last}</td>
+        <td><button class="hist-action-btn hist-view-btn" onclick="verSesionesUsuario('${u.usuario}')">VER SESIONES</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderAdminSessions(sessions){
+  if(!sessions.length){
+    document.getElementById('adminSessionsTable').innerHTML='<div class="hist-empty">No hay sesiones registradas.</div>';
+    return;
+  }
+  document.getElementById('adminSessionsTable').innerHTML=`
+  <table class="hist-table">
+    <thead><tr><th>Fecha</th><th>Usuario</th><th>Contexto</th><th>Eficiencia</th><th>Atención</th><th>Estrés</th><th>Carga</th><th>Puntuación</th><th></th></tr></thead>
+    <tbody>${sessions.slice(0,50).map(s=>`
+    <tr>
+      <td style="font-size:10px;color:var(--text3);">${s.fecha||s.timestamp?.slice(0,10)}</td>
+      <td style="color:var(--cyan2);">${s.usuario}</td>
+      <td style="font-size:10px;">${s.escenario?.toUpperCase()}</td>
+      <td><span style="font-family:'Orbitron',monospace;font-weight:700;color:${s.eficiencia>=70?'var(--green)':s.eficiencia>=45?'var(--amber)':'var(--red)'}">${s.eficiencia}%</span></td>
+      <td style="color:var(--blue);font-family:'Orbitron',monospace;font-size:11px;">${s.metricas?.atencion??'—'}%</td>
+      <td style="color:var(--red);font-family:'Orbitron',monospace;font-size:11px;">${s.metricas?.estres??'—'}%</td>
+      <td style="color:var(--amber);font-family:'Orbitron',monospace;font-size:11px;">${s.metricas?.carga??'—'}%</td>
+      <td><span class="hist-score-pill">${s.puntuacion?.toLocaleString()}</span></td>
+      <td><button class="hist-action-btn hist-view-btn" onclick="verDetalle('${s.id}')">VER</button></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderAdminCompareSelects(users){
+  const patients=users.filter(u=>u.rol==='paciente');
+  const opts='<option value="">— Seleccionar —</option>'+patients.map(u=>`<option value="${u.usuario}">${u.nombre} (${u.usuario})</option>`).join('');
+  document.getElementById('compareUserA').innerHTML=opts;
+  document.getElementById('compareUserB').innerHTML=opts;
+}
+
+function renderCompare(){
+  const uA=document.getElementById('compareUserA').value;
+  const uB=document.getElementById('compareUserB').value;
+  const cont=document.getElementById('compareResult');
+  if(!uA||!uB||uA===uB){cont.innerHTML='<div class="hist-empty">Selecciona dos usuarios distintos para comparar.</div>';return;}
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  const sesA=all.filter(s=>s.usuario===uA);
+  const sesB=all.filter(s=>s.usuario===uB);
+  if(!sesA.length||!sesB.length){cont.innerHTML='<div class="hist-empty">Uno o ambos usuarios no tienen sesiones registradas.</div>';return;}
+  const avg=(arr,k)=>arr.length?Math.round(arr.reduce((a,b)=>a+(b.metricas?.[k]??0),0)/arr.length):0;
+  const avgEff=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b.eficiencia,0)/arr.length):0;
+  const metrics=[
+    {label:'Eficiencia Cognitiva',a:avgEff(sesA),b:avgEff(sesB),unit:'%',better:'high'},
+    {label:'Atención',a:avg(sesA,'atencion'),b:avg(sesB,'atencion'),unit:'%',better:'high'},
+    {label:'Estrés',a:avg(sesA,'estres'),b:avg(sesB,'estres'),unit:'%',better:'low'},
+    {label:'Carga Cognitiva',a:avg(sesA,'carga'),b:avg(sesB,'carga'),unit:'%',better:'low'},
+    {label:'Precisión',a:avg(sesA,'precision'),b:avg(sesB,'precision'),unit:'%',better:'high'},
+    {label:'Nº Sesiones',a:sesA.length,b:sesB.length,unit:'',better:'none'},
+  ];
+  cont.innerHTML=`
+  <table class="hist-table">
+    <thead><tr><th>MÉTRICA</th><th style="color:var(--cyan)">${uA}</th><th style="color:var(--amber)">${uB}</th><th>DIFERENCIA</th></tr></thead>
+    <tbody>${metrics.map(m=>{
+      const diff=m.a-m.b; const win=m.better==='high'?(diff>0?'A':diff<0?'B':'='):m.better==='low'?(diff<0?'A':diff>0?'B':'='):'=';
+      return `<tr>
+        <td style="color:var(--text2);">${m.label}</td>
+        <td style="font-family:'Orbitron',monospace;color:${win==='A'?'var(--green)':'var(--text2)'};">${m.a}${m.unit}</td>
+        <td style="font-family:'Orbitron',monospace;color:${win==='B'?'var(--green)':'var(--text2)'};">${m.b}${m.unit}</td>
+        <td style="font-size:11px;color:${Math.abs(diff)>5?(diff>0&&m.better==='high'?'var(--green)':'var(--amber)'):'var(--text3)'};">
+          ${diff>0?'+':''}${diff}${m.unit} ${win!=='='?'→ '+win+' mejor':''}
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function verSesionesUsuario(usuario){
+  // Switch to sessions tab filtered by user
+  adminTab('sessions');
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  renderAdminSessions(all.filter(s=>s.usuario===usuario));
+  notify('Mostrando sesiones de: '+usuario,'info');
+}
+
+// ════════════════════════════════════════════
+//  HISTORY SCREEN
+// ════════════════════════════════════════════
+let histFilter='all';
+
+function renderHistory(){
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  let data=all;
+  if(histFilter==='mine'&&currentUser) data=all.filter(s=>s.usuario===currentUser.usuario);
+  if(histFilter==='best') data=all.filter(s=>s.eficiencia>70);
+
+  // Stats
+  const mine=currentUser?all.filter(s=>s.usuario===currentUser.usuario):all;
+  document.getElementById('hsTotalSes').textContent=mine.length;
+  if(mine.length){
+    const avgEff=Math.round(mine.reduce((a,b)=>a+b.eficiencia,0)/mine.length);
+    const avgScore=Math.round(mine.reduce((a,b)=>a+b.puntuacion,0)/mine.length);
+    const bestEff=Math.max(...mine.map(s=>s.eficiencia));
+    document.getElementById('hsAvgEff').textContent=avgEff+'%';
+    document.getElementById('hsAvgScore').textContent=avgScore.toLocaleString();
+    document.getElementById('hsBestEff').textContent=bestEff+'%';
+  }
+  document.getElementById('histSubtitle').textContent=
+    currentUser?('Usuario: '+currentUser.nombre+' · '+mine.length+' sesiones registradas'):'Registro de sesiones cognitivas almacenadas';
+
+  const cont=document.getElementById('histContent');
+  if(!data.length){
+    cont.innerHTML='<div class="hist-empty">No hay sesiones para mostrar.<br><span style="color:var(--text3);font-size:11px;">Completa una sesión y presiona GUARDAR RESULTADOS.</span></div>';
+    return;
+  }
+  cont.innerHTML=`
+  <table class="hist-table">
+    <thead><tr>
+      <th>#</th><th>Fecha</th><th>Usuario</th><th>Sesión / Escenario</th>
+      <th>Eficiencia</th><th>Puntuación</th><th>Aciertos</th><th>Duración</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>${data.map((s,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-size:10px;">${data.length-i}</td>
+      <td style="font-size:10px;color:var(--text3);">${s.fecha||s.timestamp.slice(0,10)}</td>
+      <td><span style="color:var(--cyan2);">${s.usuario}</span><br><span style="font-size:9px;color:var(--text3);">${s.rol||''}</span></td>
+      <td>${s.sesion}<br><span style="font-size:10px;color:var(--text3);">${s.escenario.toUpperCase()}</span></td>
+      <td><span class="hist-eff" style="color:${s.eficiencia>=70?'var(--green)':s.eficiencia>=45?'var(--amber)':'var(--red)'}">${s.eficiencia}%</span></td>
+      <td><span class="hist-score-pill">${s.puntuacion.toLocaleString()}</span></td>
+      <td style="text-align:center;">${s.aciertos}/${s.intentos}</td>
+      <td style="font-family:'Orbitron',monospace;font-size:10px;">${s.duracion}</td>
+      <td><div class="hist-actions">
+        <button class="hist-action-btn hist-view-btn" onclick="verDetalle('${s.id}')">VER</button>
+        ${currentUser&&(s.usuario===currentUser.usuario||currentUser.rol==='psicologo')?`<button class="hist-action-btn hist-del-btn" onclick="borrarSesion('${s.id}')">DEL</button>`:''}
+      </div></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function filterHistory(f){
+  histFilter=f;
+  ['all','mine','best'].forEach(x=>document.getElementById('hf'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('active',x===f));
+  renderHistory();
+}
+
+function verDetalle(id){
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  const s=all.find(x=>x.id===id); if(!s) return;
+  document.getElementById('detailTitle').textContent='SESIÓN — '+s.fecha;
+  document.getElementById('detailBody').innerHTML=`
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${s.nombreCompleto||s.usuario} · <span style="color:var(--cyan2);">${s.sesion}</span> · Escenario: ${s.escenario.toUpperCase()}</div>
+    <div class="detail-grid">
+      <div class="detail-metric"><div class="detail-num" style="color:var(--cyan)">${s.eficiencia}%</div><div class="detail-lbl">EFICIENCIA COGNITIVA</div></div>
+      <div class="detail-metric"><div class="detail-num" style="color:var(--amber)">${s.puntuacion.toLocaleString()}</div><div class="detail-lbl">PUNTUACIÓN</div></div>
+      <div class="detail-metric"><div class="detail-num" style="color:var(--blue)">${s.metricas.atencion}%</div><div class="detail-lbl">ATENCIÓN</div></div>
+      <div class="detail-metric"><div class="detail-num" style="color:var(--red)">${s.metricas.estres}%</div><div class="detail-lbl">ESTRÉS</div></div>
+      <div class="detail-metric"><div class="detail-num" style="color:var(--amber)">${s.metricas.carga}%</div><div class="detail-lbl">CARGA COGNITIVA</div></div>
+      <div class="detail-metric"><div class="detail-num" style="color:var(--green)">${s.metricas.precision}%</div><div class="detail-lbl">PRECISIÓN</div></div>
+    </div>
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan2);letter-spacing:2px;margin-bottom:8px;">RECOMENDACIONES</div>
+      ${s.recomendaciones.map(r=>`<div style="font-size:11px;color:var(--text2);padding:4px 0;border-bottom:1px solid rgba(13,64,96,.3);">▸ ${r}</div>`).join('')}
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:var(--text3);">
+      Aciertos: ${s.aciertos}/${s.intentos} · Duración: ${s.duracion} · Latencia prom: ${s.metricas.latencia}s
+    </div>`;
+  document.getElementById('detailModal').classList.remove('hidden');
+}
+
+function borrarSesion(id){
+  if(!confirm('¿Eliminar esta sesión del historial?')) return;
+  let all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  all=all.filter(x=>x.id!==id);
+  localStorage.setItem('cognilith_sessions',JSON.stringify(all));
+  renderHistory();
+  notify('Sesión eliminada.','warn');
+}
+
+function clearMyHistory(){
+  if(!currentUser){notify('Debes iniciar sesión.','danger');return;}
+  if(!confirm('¿Borrar TODAS tus sesiones? Esta acción no se puede deshacer.')) return;
+  let all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  all=all.filter(x=>x.usuario!==currentUser.usuario);
+  localStorage.setItem('cognilith_sessions',JSON.stringify(all));
+  renderHistory();
+  notify('Historial borrado.','warn');
+}
+
+function generarSesionesPrueba(){
+  // Genera datos de demostración automáticamente la primera vez que se abre el sistema, sin pedir confirmación.
+  if(localStorage.getItem('cognilith_demo_seeded')) return; // ya se generaron antes, no duplicar
+  localStorage.setItem('cognilith_demo_seeded','1');
+  const nombres=['Kevin Ramírez','Daniela Torres','Rodrigo Pinzón','Valentina Suárez','Camila Rojas','Andrés Pardo','Laura Méndez','Juan Esteban Vargas','Mariana Bautista','Sebastián Ortiz','Natalia Cárdenas','Felipe Gómez'];
+  const usados=new Set();
+  const usuariosDemo=[];
+  const cantidadUsuarios=8+Math.floor(Math.random()*3); // 8-10 usuarios
+  for(let i=0;i<cantidadUsuarios;i++){
+    const nombre=nombres[i%nombres.length];
+    let usuario=nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'.').replace(/[^a-z.]/g,'')+(i>=nombres.length?Math.floor(Math.random()*99):'');
+    if(usados.has(usuario)) usuario+=Math.floor(Math.random()*999);
+    usados.add(usuario);
+    usuariosDemo.push({usuario,password:'demo123',nombre});
+  }
+  // Registrar los usuarios demo (sin duplicar si ya existen)
+  const usersAll=JSON.parse(localStorage.getItem('cognilith_users')||'[]');
+  usuariosDemo.forEach(u=>{ if(!usersAll.some(x=>x.usuario===u.usuario)) usersAll.push(u); });
+  localStorage.setItem('cognilith_users',JSON.stringify(usersAll));
+
+  const escenarios=Object.keys(SCENARIO_LABELS);
+  const modos=['libre','guiado'];
+  const ambientales=['activado','desactivado'];
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  const nuevas=[];
+  for(let i=0;i<50;i++){
+    const u=usuariosDemo[Math.floor(Math.random()*usuariosDemo.length)];
+    const esc=escenarios[Math.floor(Math.random()*escenarios.length)];
+    const aA=Math.round(20+Math.random()*70);
+    const aE=Math.round(10+Math.random()*75);
+    const aC=Math.round(15+Math.random()*70);
+    const aP=Math.round(35+Math.random()*60);
+    const aL=+(0.6+Math.random()*1.8).toFixed(2);
+    const eff=Math.round(Math.max(0,Math.min(100,(aA*.45)+(Math.max(0,100-aE)*.30)+(Math.max(0,100-aC)*.25))));
+    const intentos=8+Math.floor(Math.random()*22);
+    const aciertos=Math.max(0,Math.round(intentos*(aP/100)));
+    const minutos=String(4+Math.floor(Math.random()*12)).padStart(2,'0');
+    const segundos=String(Math.floor(Math.random()*60)).padStart(2,'0');
+    // fecha aleatoria dentro de los últimos 45 días, retrocediendo desde hoy
+    const fechaObj=new Date(Date.now()-Math.floor(Math.random()*45)*86400000-Math.floor(Math.random()*86400000));
+    const recs=[];
+    if(aE>65) recs.push('Signos de estrés elevado — se recomienda intervención');
+    if(aC>65) recs.push('Carga mental alta — evaluar demanda de tareas');
+    if(aA<40) recs.push('Atención inconsistente — explorar técnicas de foco');
+    if(aP<55) recs.push('Precisión reducida — posible fatiga cognitiva');
+    if(recs.length===0) recs.push('Desempeño dentro de parámetros esperados');
+    nuevas.push({
+      id:'ses_demo_'+Date.now()+'_'+i,
+      usuario:u.usuario,
+      nombreCompleto:u.nombre,
+      sesion:SCENARIO_LABELS[esc],
+      escenario:esc,
+      modoEvaluacion:modos[Math.floor(Math.random()*modos.length)],
+      feedbackAmbiental:ambientales[Math.floor(Math.random()*ambientales.length)],
+      duracion:minutos+':'+segundos,
+      puntuacion:Math.round(eff*15+Math.random()*400),
+      aciertos,
+      intentos,
+      eficiencia:eff,
+      metricas:{atencion:aA,estres:aE,carga:aC,latencia:aL,precision:aP},
+      recomendaciones:recs,
+      timestamp:fechaObj.toISOString(),
+      fecha:fechaObj.toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+    });
+  }
+  nuevas.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const combinadas=nuevas.concat(all);
+  localStorage.setItem('cognilith_sessions',JSON.stringify(combinadas));
+  renderHistory();
+}
+
+function exportHistoryCSV(){
+  const all=JSON.parse(localStorage.getItem('cognilith_sessions')||'[]');
+  let data=all;
+  if(histFilter==='mine'&&currentUser) data=all.filter(s=>s.usuario===currentUser.usuario);
+  if(!data.length){notify('No hay sesiones para exportar.','warn');return;}
+  const header='Fecha,Usuario,Rol,Sesión,Escenario,Eficiencia,Puntuación,Aciertos,Intentos,Duración,Atención,Estrés,Carga,Precisión,Latencia';
+  const rows=data.map(s=>[s.fecha,s.usuario,s.rol,s.sesion,s.escenario,s.eficiencia,s.puntuacion,s.aciertos,s.intentos,s.duracion,s.metricas.atencion,s.metricas.estres,s.metricas.carga,s.metricas.precision,s.metricas.latencia].join(','));
+  const csv=[header,...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cognilith_historial_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  notify('CSV exportado.','info');
+}
+
+// ════════════════════════════════════════════
+//  TIMER
+// ════════════════════════════════════════════
+function startTimer(){
+  if(S.timerInterval) clearInterval(S.timerInterval);
+  S.timerInterval=setInterval(()=>{
+    if(!S.paused) S.time++;
+    const m=String(Math.floor(S.time/60)).padStart(2,'0'), sc=String(S.time%60).padStart(2,'0');
+    document.getElementById('gameTimer').textContent=m+':'+sc;
+    document.getElementById('timerDisplay').textContent=m+':'+sc;
+    if(S.running&&!S.paused&&S.time>0&&S.time%35===0){
+      G.active=false; G.targets=[];
+      G.gameIdx=(G.gameIdx+1)%GAMES.length;
+      launchCountdown(GAMES[G.gameIdx]);
+    }
+  },1000);
+}
+
+// ════════════════════════════════════════════
+//  MINIGAME ENGINE
+// ════════════════════════════════════════════
+// ════════════════════════════════════════════
+//  VOICE & BEEP SYSTEM
+// ════════════════════════════════════════════
+function speak(text, rate, pitch){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='es-ES'; u.rate=rate||0.95; u.pitch=pitch||1.1; u.volume=0.9;
+  // Try to pick a Spanish voice
+  const voices=window.speechSynthesis.getVoices();
+  const esp=voices.find(v=>v.lang.startsWith('es'))||voices[0];
+  if(esp) u.voice=esp;
+  window.speechSynthesis.speak(u);
+}
+
+function playBeep(freq, duration, gainVal){
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.type='sine'; o.frequency.value=freq||880;
+  g.gain.setValueAtTime(0,ctx.currentTime);
+  g.gain.linearRampToValueAtTime(gainVal||0.2,ctx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+(duration||0.15));
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+(duration||0.15)+0.05);
+}
+
+function playReadySound(){
+  // Rising 3-note arpeggio: C5-E5-G5
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  [523,659,784].forEach((freq,i)=>{
+    const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    const t=ctx.currentTime+i*0.12;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.22,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t+0.3);
+  });
+}
+
+// Sonido corto de acierto al hacer clic o presionar espacio sobre un objetivo válido
+function playHitSound(){
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  const o=ctx.createOscillator(); const g=ctx.createGain();
+  o.type='sine';
+  o.frequency.setValueAtTime(720,ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(1180,ctx.currentTime+0.09);
+  g.gain.setValueAtTime(0,ctx.currentTime);
+  g.gain.linearRampToValueAtTime(0.22,ctx.currentTime+0.015);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+0.17);
+}
+
+// Sonido corto de error al hacer clic o presionar espacio fuera de objetivo, o sobre un distractor
+function playMissSound(){
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  const o=ctx.createOscillator(); const g=ctx.createGain();
+  o.type='sawtooth';
+  o.frequency.setValueAtTime(220,ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(90,ctx.currentTime+0.22);
+  g.gain.setValueAtTime(0,ctx.currentTime);
+  g.gain.linearRampToValueAtTime(0.18,ctx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.26);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+0.28);
+}
+
+function launchCountdown(game){
+  G.countdownActive=true; G.countdownVal=3;
+  const guiado=S.evalMode==='guiado';
+  const hintTxt=guiado&&HINTS[game.id]?(' — '+HINTS[game.id]):'';
+  document.getElementById('challengeText').textContent=game.name+' — '+game.desc+hintTxt;
+
+  // Announce game name by voice (con pista hablada si el modo es Guiado)
+  speak(game.name+(guiado&&HINTS[game.id]?('. '+HINTS[game.id]):''), 0.9, 1.05);
+
+  const steps=[
+    ()=>{ playBeep(660,0.12,0.18); },
+    ()=>{ playBeep(660,0.12,0.18); },
+    ()=>{ playBeep(660,0.12,0.18); },
+  ];
+
+  let t=0;
+  const iv=setInterval(()=>{
+    G.countdownVal--;
+    if(steps[t]) steps[t]();
+    t++;
+    if(G.countdownVal<=0){
+      clearInterval(iv);
+      G.countdownActive=false;
+      // Rising arpeggio + "Listos" voice
+      playReadySound();
+      setTimeout(()=>speak('Listos', 1.0, 1.2), 350);
+      startMiniGame(game);
+    }
+  },700);
+}
+function startMiniGame(game){
+  G.active=true; G.targets=[]; G.seqPattern=[]; G.seqInput=[];
+  G.seqPhase='show'; G.seqIdx=0; G.trackTarget=null; G.trackTime=0; G.trackOnTarget=false;
+  G.lastSpawn=performance.now();
+  const diff=S.difficulty==='alta'?1.4:S.difficulty==='baja'?0.7:1.0;
+  const guiadoMod=S.evalMode==='guiado'?1.3:1;
+  G.spawnInterval=Math.max(500,1800/diff*guiadoMod);
+  if(game.id==='sequence') buildSequence();
+  if(game.id==='track') spawnTrackTarget();
+}
+function seqGrid(){
+  const c=document.getElementById('scene3d');
+  const w=c.width||600, h=c.height||400;
+  const gw=w*.52, gh=h*.50, ox=(w-gw)/2, oy=(h-gh)/2+15;
+  return Array.from({length:9},(_,i)=>({x:ox+((i%3)+.5)*(gw/3),y:oy+(Math.floor(i/3)+.5)*(gh/3)}));
+}
+function buildSequence(){
+  let len=S.difficulty==='alta'?6:S.difficulty==='baja'?3:4;
+  if(S.evalMode==='guiado') len=Math.max(3,len-1);
+  G.seqPattern=Array.from({length:len},()=>Math.floor(Math.random()*9));
+  G.seqPhase='show'; G.seqIdx=0; G.seqInput=[];
+  showNextSeqNode();
+}
+function showNextSeqNode(){
+  if(G.seqIdx>=G.seqPattern.length){G.seqPhase='input';G.seqIdx=0;return;}
+  const c=seqGrid()[G.seqPattern[G.seqIdx]];
+  G.targets=[{x:c.x,y:c.y,r:22,born:performance.now(),ttl:600,type:'seq-show',id:_tid++,hit:false}];
+  G.seqIdx++;
+  setTimeout(()=>{G.targets=[];setTimeout(showNextSeqNode,250);},560);
+}
+function spawnTrackTarget(){
+  const c=document.getElementById('scene3d'), w=c.width||600, h=c.height||400;
+  let spd=S.difficulty==='alta'?2.4:S.difficulty==='baja'?1.0:1.6;
+  if(S.evalMode==='guiado') spd*=0.75;
+  G.trackTarget={x:w/2,y:h/2,vx:(Math.random()-.5)*spd*2,vy:(Math.random()-.5)*spd*2,r:20};
+}
+function spawnTarget(game){
+  const c=document.getElementById('scene3d'), w=c.width||600, h=c.height||400;
+  const mg=60, x=mg+Math.random()*(w-mg*2), y=mg+Math.random()*(h-mg*2-50);
+  const diff=S.difficulty; const guiado=S.evalMode==='guiado';
+  const ttl=(diff==='alta'?850:diff==='baja'?2200:1500)*(guiado?1.3:1);
+  const r=(diff==='alta'?15:diff==='baja'?28:21)*(guiado?1.15:1);
+  if(game.id==='targets') G.targets.push({x,y,r,born:performance.now(),ttl,type:'cyan',id:_tid++,hit:false});
+  else if(game.id==='reflex'){
+    const gold=Math.random()<.28;
+    G.targets.push({x,y,r,born:performance.now(),ttl:gold?950:ttl,type:gold?'gold':'decoy',id:_tid++,hit:false});
+  } else if(game.id==='inhibit'){
+    const good=Math.random()<.5;
+    G.targets.push({x,y,r,born:performance.now(),ttl,type:good?'good':'bad',id:_tid++,hit:false});
+  }
+}
+let lastMouseClientX=0, lastMouseClientY=0;
+function startMinigameLoop(){
+  const canvas=document.getElementById('scene3d');
+  canvas.style.cursor='crosshair';
+  canvas.onclick=handleClick;
+  canvas.onmousemove=handleMove;
+}
+function handleClick(e){
+  if(!S.running||S.paused||!G.active) return;
+  const rect=e.target.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(e.target.width/rect.width);
+  const my=(e.clientY-rect.top)*(e.target.height/rect.height);
+  const now=performance.now(); const game=GAMES[G.gameIdx];
+  const lenient=S.evalMode==='guiado'?0.5:1; // en modo Guiado las penalizaciones son más suaves
+  if(game.id==='targets'||game.id==='reflex'){
+    let hit=false;
+    G.targets.forEach(t=>{
+      if(t.hit) return;
+      const dx=mx-t.x,dy=my-t.y;
+      if(Math.sqrt(dx*dx+dy*dy)<t.r+10){
+        t.hit=true; hit=true;
+        const rt=now-t.born; G.reactionTimes.push(rt); G.totalTrials++;
+        if((game.id==='targets'&&t.type==='cyan')||(game.id==='reflex'&&t.type==='gold')){
+          G.hits++; G.combo++;
+          const pts=Math.max(10,Math.round(450/Math.max(180,rt)*10))*(G.combo>2?2:1);
+          G.score+=pts; showFlash('+'+pts+(G.combo>2?' COMBO x2':''),mx,my,'#00ff88'); applyHit(rt,true); playHitSound();
+        } else {
+          const pen=Math.round(40*lenient);
+          G.misses++; G.combo=0; G.score=Math.max(0,G.score-pen); showFlash('MISS -'+pen,mx,my,'#ff3b3b'); applyHit(1800,false); playMissSound();
+        }
+      }
+    });
+    if(!hit){G.misses++;G.combo=0;G.totalTrials++;applyHit(2000,false);showFlash('MISS',mx,my,'rgba(255,59,59,.7)');playMissSound();}
+  } else if(game.id==='inhibit'){
+    G.targets.forEach(t=>{
+      if(t.hit) return;
+      const dx=mx-t.x,dy=my-t.y;
+      if(Math.sqrt(dx*dx+dy*dy)<t.r+10){
+        t.hit=true; G.totalTrials++;
+        if(t.type==='good'){G.hits++;G.combo++;G.score+=80*(G.combo>2?2:1);showFlash('+80',mx,my,'#00ff88');applyHit(500,true);playHitSound();}
+        else{const pen=Math.round(60*lenient);G.misses++;G.combo=0;G.score=Math.max(0,G.score-pen);showFlash('DISTRACTOR! -'+pen,mx,my,'#ff3b3b');applyHit(2000,false);playMissSound();}
+      }
+    });
+  } else if(game.id==='sequence'&&G.seqPhase==='input'){
+    const grid=seqGrid();
+    grid.forEach((c,i)=>{
+      const dx=mx-c.x,dy=my-c.y;
+      if(Math.sqrt(dx*dx+dy*dy)<26){
+        G.seqInput.push(i); G.totalTrials++;
+        const ok=G.seqInput[G.seqInput.length-1]===G.seqPattern[G.seqInput.length-1];
+        if(ok){
+          G.hits++;G.combo++;
+          G.targets=[{x:c.x,y:c.y,r:22,born:now,ttl:400,type:'seq-correct',id:_tid++,hit:false}];
+          showFlash('OK:',mx,my,'#44ff88'); playHitSound();
+          if(G.seqInput.length===G.seqPattern.length){
+            const pts=200+G.seqPattern.length*20;G.score+=pts;
+            showFlash('¡SECUENCIA! +'+pts,mx,my,'#44ff88');
+            applyHit(350,true); setTimeout(()=>buildSequence(),800);
+          } else applyHit(500,true);
+        } else {
+          const pen=Math.round(30*lenient);
+          G.misses++;G.combo=0;G.score=Math.max(0,G.score-pen);
+          G.targets=[{x:c.x,y:c.y,r:22,born:now,ttl:400,type:'seq-wrong',id:_tid++,hit:false}];
+          showFlash('✗ -'+pen,mx,my,'#ff3b3b'); applyHit(2000,false); playMissSound();
+          setTimeout(()=>buildSequence(),900);
+        }
+      }
+    });
+  }
+}
+function handleMove(e){
+  lastMouseClientX=e.clientX; lastMouseClientY=e.clientY;
+  if(!S.running||S.paused) return;
+  const rect=e.target.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(e.target.width/rect.width);
+  const my=(e.clientY-rect.top)*(e.target.height/rect.height);
+  if(G.trackTarget){const dx=mx-G.trackTarget.x,dy=my-G.trackTarget.y;G.trackOnTarget=Math.sqrt(dx*dx+dy*dy)<G.trackTarget.r+14;}
+  S.nav=Math.min(99,Math.round(10+(Math.abs(e.movementX)+Math.abs(e.movementY))*.4+S.stress*.12));
+}
+// Barra espaciadora = clic en la posición actual del cursor (mismo efecto y sonido que el clic)
+window.addEventListener('keydown',(e)=>{
+  if(e.code!=='Space'&&e.key!==' ') return;
+  const tag=document.activeElement&&document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if(!S.running||S.paused||!G.active) return;
+  e.preventDefault();
+  const canvas=document.getElementById('scene3d');
+  if(!canvas) return;
+  handleClick({target:canvas,clientX:lastMouseClientX,clientY:lastMouseClientY});
+});
+function applyHit(rt,ok){
+  const n=Math.min(1,rt/2000);
+  if(ok){S.attention=Math.min(95,S.attention+2.5-n*1.8);S.stress=Math.max(5,S.stress-1.8);S.load=Math.max(10,S.load-1.2);}
+  else{S.attention=Math.max(5,S.attention-3.5);S.stress=Math.min(95,S.stress+3.5+n*2.5);S.load=Math.min(90,S.load+2.5);}
+  S.latency=+(0.35+n*1.9+Math.random()*.12).toFixed(2);
+  S.precision=G.totalTrials>0?Math.round((G.hits/G.totalTrials)*100):75;
+}
+function showFlash(txt,x,y,color){G.flashMsg=txt;G.flashAlpha=1;G.flashX=x;G.flashY=y;G.flashColor=color||'#fff';}
+
+// ════════════════════════════════════════════
+//  SIMULATION LOOP
+// ════════════════════════════════════════════
+function startSimulation(){
+  if(S.animInterval) clearInterval(S.animInterval);
+  S.animInterval=setInterval(()=>{
+    if(!S.running||S.paused) return;
+    S.attention=Math.max(5,Math.min(95,S.attention+(Math.random()-.52)*1.2));
+    S.stress=Math.max(5,Math.min(95,S.stress+(Math.random()-.48)*1.0));
+    S.load=Math.max(10,Math.min(90,S.load+(Math.random()-.50)*.8));
+    const game=GAMES[G.gameIdx]; const now=performance.now();
+    if(G.active&&(game.id==='targets'||game.id==='reflex'||game.id==='inhibit')){
+      if(now-G.lastSpawn>G.spawnInterval){G.lastSpawn=now;spawnTarget(game);}
+      G.targets=G.targets.filter(t=>{
+        if(!t.hit&&now-t.born>t.ttl){
+          if(game.id!=='inhibit'||t.type==='good'){G.misses++;G.combo=0;G.totalTrials++;applyHit(2000,false);playMissSound();}
+          return false;
+        }
+        return!(t.hit&&now-t.born>t.ttl+350);
+      });
+    }
+    if(G.active&&game.id==='track'&&G.trackTarget){
+      const c=document.getElementById('scene3d'),w=c.width||600,h=c.height||400;
+      G.trackTarget.x+=G.trackTarget.vx; G.trackTarget.y+=G.trackTarget.vy;
+      if(G.trackTarget.x<45||G.trackTarget.x>w-45) G.trackTarget.vx*=-1;
+      if(G.trackTarget.y<45||G.trackTarget.y>h-45) G.trackTarget.vy*=-1;
+      if(G.trackOnTarget){G.trackTime++;G.score+=2;S.attention=Math.min(95,S.attention+.25);S.stress=Math.max(5,S.stress-.15);}
+      else{S.attention=Math.max(5,S.attention-.3);}
+      S.precision=G.totalTrials>0?Math.round((G.hits/Math.max(1,G.totalTrials))*100):Math.round(G.trackOnTarget?72:38);
+    }
+    if(S.evalMode==='diagnostico'){
+      // Diagnóstico: dificultad fija para estandarizar la medición
+      S.difficulty='media';
+    } else if(S.attention>70&&S.stress<40) S.difficulty='alta';
+    else if(S.stress>70||S.attention<30) S.difficulty='baja';
+    else S.difficulty='media';
+    const guiadoMod=S.evalMode==='guiado'?1.3:1;
+    G.spawnInterval=Math.max(480,(S.difficulty==='alta'?1200:S.difficulty==='baja'?2400:1800)*guiadoMod);
+    ['attention','stress','load','latency','precision'].forEach(k=>{
+      S.history[k].push(S[k]); if(S.history[k].length>300) S.history[k].shift();
+    });
+    updateUI(); updateAlerts(); updateAmbientSound();
+  },300);
+}
+
+// ════════════════════════════════════════════
+//  UI UPDATE
+// ════════════════════════════════════════════
+function updateUI(){
+  const a=Math.round(S.attention),e=Math.round(S.stress),c=Math.round(S.load);
+  setM('At',a,a>60?'low':a>35?'mid':'high',a);
+  setM('Es',e,e<40?'low':e<65?'mid':'high',e);
+  setM('Cg',c,c<50?'low':c<70?'mid':'high',c);
+  const rl=document.getElementById('rtLat'); rl.textContent=S.latency.toFixed(1)+'s'; rl.style.color=S.latency>S.calib.latAlto?'var(--red)':S.latency>S.calib.latRef?'var(--amber)':'var(--green)';
+  const rp=document.getElementById('rtPrec'); rp.textContent=Math.round(S.precision)+'%'; rp.style.color=S.precision<50?'var(--red)':S.precision<70?'var(--amber)':'var(--green)';
+  const rn=document.getElementById('rtNav'); rn.textContent=S.nav+' mov'; rn.style.color=S.nav>30?'var(--red)':S.nav>20?'var(--amber)':'var(--green)';
+  const db=document.getElementById('diffBadge'); db.textContent='DIFICULTAD: '+S.difficulty.toUpperCase(); db.className='diff-badge '+(S.difficulty==='alta'?'diff-high':S.difficulty==='baja'?'diff-low':'diff-mid');
+  document.getElementById('bordeBadge').textContent=S.running?'ACTIVO':'STANDBY';
+  document.getElementById('playBtn').textContent=S.paused?'CONTINUAR SIMULACION':'PAUSAR SIMULACION';
+  document.getElementById('scorePanel').textContent=G.score.toLocaleString();
+  document.getElementById('comboPanel').textContent=G.combo>2?'COMBO x'+(G.combo>5?'3':G.combo>3?'2':'2'):'';
+  if(S.running&&!G.countdownActive) document.getElementById('challengeText').textContent=GAMES[G.gameIdx].desc;
+}
+function setM(id,val,cls,pct){
+  const v=document.getElementById('met'+id), b=document.getElementById('bar'+id);
+  v.textContent=val; v.className='metric-val '+cls; b.style.width=pct+'%';
+}
+function updateAlerts(){
+  const alerts=[];
+  if(S.stress>S.calib.stressAlerta) alerts.push({type:'danger',icon:'ALERTA:',text:'Signos de incremento en estrés detectados'});
+  if(S.load>S.calib.loadAlerta)   alerts.push({type:'warn',icon:'ALERTA:',text:'Indicadores de carga mental alta'});
+  if(S.attention<S.calib.attLow) alerts.push({type:'warn',icon:'ALERTA:',text:'Patrones de atención inconsistente'});
+  if(G.combo>3)   alerts.push({type:'info',icon:'OK:',text:'¡Combo activo — alta eficiencia cognitiva!'});
+  if(S.precision>78&&S.stress<40) alerts.push({type:'info',icon:'OK:',text:'Estado cognitivo óptimo — buen desempeño'});
+  if(alerts.length===0) alerts.push({type:'info',icon:'ℹ',text:'Sistema monitoreando en tiempo real...'});
+  document.getElementById('alertasList').innerHTML=alerts.slice(0,3).map(a=>`<div class="alert-box ${a.type}"><span class="alert-text">${a.icon} ${a.text}</span></div>`).join('');
+}
+
+// ════════════════════════════════════════════
+//  CANVAS — FOREST / SCENARIO
+// ════════════════════════════════════════════
+function initScene(){
+  const canvas=document.getElementById('scene3d');
+  const ctx=canvas.getContext('2d');
+  let frame=0;
+  function resize(){
+    const p=canvas.parentElement;
+    canvas.width=p.offsetWidth||600; canvas.height=p.offsetHeight||380;
+  }
+  setTimeout(resize,120); window.addEventListener('resize',resize);
+
+  function draw(){
+    const w=canvas.width,h=canvas.height;
+    if(w<10||h<10){frame++;requestAnimationFrame(draw);return;}
+    const SC=SCENARIOS[S.scenario]||SCENARIOS.bosque;
+    const hor=h*.57;
+    const stN=S.running?S.stress/100:.15;
+    const atN=S.running?S.attention/100:.6;
+    const fbMode=S.feedbackAmbiental||'activado';
+    const fbStN=fbMode==='desactivado'?.18:stN; // niebla neutra si el feedback ambiental está desactivado
+
+    // SKY
+    const sg=ctx.createLinearGradient(0,0,0,hor);
+    sg.addColorStop(0,SC.sky[0]); sg.addColorStop(.5,SC.sky[1]); sg.addColorStop(1,SC.sky[2]);
+    ctx.fillStyle=sg; ctx.fillRect(0,0,w,hor+2);
+
+    // STARS/ELEMENTS
+    for(let i=0;i<28;i++){
+      const sx=((i*271+13)%100)/100*w, sy=((i*137+7)%100)/100*hor*.88;
+      const bk=Math.sin(frame*.04+i*.9)*.4+.55;
+      ctx.beginPath(); ctx.arc(sx,sy,i%5===0?1.4:.75,0,Math.PI*2);
+      ctx.fillStyle=`rgba(210,235,255,${bk*.85})`; ctx.fill();
+    }
+
+    // MOON/SUN
+    const mx2=w*.82,my2=h*.11;
+    const mCol=S.scenario==='estres'?'rgba(255,100,80,.6)':S.scenario==='ciudad'?'rgba(255,200,80,.7)':'rgba(200,225,255,.65)';
+    ctx.beginPath(); ctx.arc(mx2,my2,11,0,Math.PI*2); ctx.fillStyle=mCol; ctx.fill();
+    if(S.scenario!=='estres'){ctx.beginPath();ctx.arc(mx2+4,my2-2,9,0,Math.PI*2);ctx.fillStyle=SC.sky[0];ctx.fill();}
+
+    // MOUNTAINS
+    ctx.beginPath(); ctx.moveTo(0,hor);
+    [[0,.82],[.08,.62],[.16,.72],[.24,.54],[.32,.67],[.40,.50],[.48,.63],[.56,.48],[.64,.60],[.72,.52],[.80,.65],[.88,.55],[.94,.68],[1,.72],[1,1],[0,1]].forEach(([mx,my])=>ctx.lineTo(mx*w,my*hor+(1-my)*hor*.1));
+    ctx.closePath(); ctx.fillStyle=SC.sky[0]; ctx.fill();
+
+    // GROUND
+    const gg=ctx.createLinearGradient(0,hor,0,h);
+    gg.addColorStop(0,SC.sky[1]); gg.addColorStop(1,SC.sky[0]);
+    ctx.fillStyle=gg; ctx.fillRect(0,hor,w,h-hor);
+
+    // GRID
+    ctx.strokeStyle='rgba(0,180,200,.10)'; ctx.lineWidth=.6;
+    const vp={x:w/2,y:hor};
+    for(let i=0;i<=12;i++){const gx=w*i/12;ctx.beginPath();ctx.moveTo(gx,h);ctx.lineTo(vp.x,vp.y);ctx.stroke();}
+    for(let i=1;i<=8;i++){const gy=hor+(h-hor)*i/8,sp=(gy-hor)/(h-hor);ctx.beginPath();ctx.moveTo(vp.x-w*.5*sp,gy);ctx.lineTo(vp.x+w*.5*sp,gy);ctx.stroke();}
+
+    // FOG
+    const fg=ctx.createLinearGradient(0,hor-25,0,hor+55);
+    fg.addColorStop(0,'transparent'); fg.addColorStop(.45,SC.fog+(0.28+fbStN*.18)+')'); fg.addColorStop(1,'transparent');
+    ctx.fillStyle=fg; ctx.fillRect(0,hor-25,w,80);
+
+    // TREE function
+    function drawTree(x,baseY,tH,trW,alpha,glowCol){
+      ctx.fillStyle=`rgba(1,8,15,${alpha})`; ctx.fillRect(x-trW/2,baseY-tH*.38,trW,tH*.38);
+      for(let l=0;l<3;l++){
+        const ly=baseY-tH*.32-(tH*.65)*l/3, lw=tH*.52*(1-l*.2), lh=tH*.33;
+        ctx.beginPath(); ctx.moveTo(x,ly-lh); ctx.lineTo(x-lw,ly); ctx.lineTo(x+lw,ly); ctx.closePath();
+        ctx.fillStyle=`rgba(1,10,18,${alpha})`; ctx.fill();
+        const glow=Math.sin(frame*.025+x*.01)*.22+.32;
+        ctx.strokeStyle=`${glowCol}${glow*alpha*.9})`; ctx.lineWidth=1.1; ctx.stroke();
+      }
+    }
+    const gc=SC.tree;
+    [[.04,.10,.17,.24],[.72,.79,.86,.93,.98]].forEach((row,ri)=>row.forEach((tx,i)=>{
+      drawTree(tx*w,hor+6,h*(ri?.22:.19)+i%3*h*.04,5,.5,gc);
+    }));
+    [[.02,.13,.22],[.68,.80,.90,.97]].forEach((row,ri)=>row.forEach((tx,i)=>{
+      drawTree(tx*w,hor+8,h*(ri?.37:.34)+i%3*h*.05,8,.72,gc);
+    }));
+    [[0,.09,.18],[.74,.83,.91,1.0]].forEach((row,ri)=>row.forEach((tx,i)=>{
+      drawTree(tx*w,h*.94,h*(.68+i%2*.04),13,1.0,gc);
+    }));
+
+    // PARTICLES / FIREFLIES
+    const [pr,pg2,pb2]=SC.part;
+    for(let i=0;i<22;i++){
+      const t2=frame*.008+i*.43;
+      const px=((i*173+Math.sin(t2)*50+frame*.28)%w+w)%w;
+      const py=hor+(h-hor)*((i*97)%100)/100*.82+Math.sin(t2*1.2)*7;
+      const bk=Math.sin(frame*.06+i*1.8)*.38+.28;
+      const sz=i%4===0?2.4:1.4;
+      ctx.beginPath(); ctx.arc(px,py,sz,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${pr},${pg2},${pb2},${bk*.8})`; ctx.fill();
+      if(i%3===0){
+        const pg3=ctx.createRadialGradient(px,py,0,px,py,7);
+        pg3.addColorStop(0,`rgba(${pr},${pg2},${pb2},${bk*.28})`); pg3.addColorStop(1,'transparent');
+        ctx.fillStyle=pg3; ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    // CENTER PORTAL
+    const pp=Math.sin(frame*.017)*.07+.11;
+    const pg4=ctx.createRadialGradient(w/2,hor-8,0,w/2,hor-8,w*.26);
+    pg4.addColorStop(0,`rgba(${pr},${pg2},${pb2},${pp})`); pg4.addColorStop(.5,`rgba(${pr},${pg2},${pb2},${pp*.35})`); pg4.addColorStop(1,'transparent');
+    ctx.fillStyle=pg4; ctx.fillRect(0,0,w,h);
+    // Beam
+    const bG=ctx.createLinearGradient(w/2-12,0,w/2+12,0);
+    bG.addColorStop(0,'transparent'); bG.addColorStop(.5,`rgba(${pr},${pg2},${pb2},${pp*.55})`); bG.addColorStop(1,'transparent');
+    ctx.fillStyle=bG; ctx.fillRect(w/2-12,0,24,hor);
+
+    // SCENARIO LABEL HUD (top left)
+    ctx.save();
+    ctx.font='bold 10px Orbitron,monospace'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(0,180,220,.5)';
+    ctx.fillText((SC.label||'').toUpperCase(),10,14);
+    ctx.restore();
+
+    // ── THEMED ENVIRONMENT ELEMENTS ──
+    const env=SC.envType||'forest';
+
+    if(env==='classroom'){
+      // Draw classroom: rows of desks, chalkboard at horizon
+      // Chalkboard
+      ctx.fillStyle='rgba(10,40,10,.85)';
+      ctx.fillRect(w*.12,hor-h*.18,w*.76,h*.17);
+      ctx.strokeStyle='rgba(80,160,80,.5)'; ctx.lineWidth=2;
+      ctx.strokeRect(w*.12,hor-h*.18,w*.76,h*.17);
+      // Chalk lines on board
+      ctx.strokeStyle='rgba(200,230,200,.22)'; ctx.lineWidth=1;
+      for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(w*.15,hor-h*.18+h*.17*i/4);ctx.lineTo(w*.87,hor-h*.18+h*.17*i/4);ctx.stroke();}
+      ctx.font='9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='rgba(180,220,180,.3)';
+      ctx.fillText('EVALUACIÓN COGNITIVA',w/2,hor-h*.09);
+      // Desk rows using perspective
+      const deskRows=[[.75,.82,.89],[.64,.72,.80,.88,.96]];
+      deskRows.forEach((row,ri)=>{
+        const dy=hor+(h-hor)*(ri===0?.22:.45);
+        const dw=(ri===0?w*.09:w*.07)*(1+(ri*.15));
+        const dh=(ri===0?h*.025:h*.018)*(1+(ri*.2));
+        row.forEach(dx=>{
+          ctx.fillStyle='rgba(20,50,70,.7)';
+          ctx.fillRect(dx*w-dw/2,dy,dw,dh);
+          ctx.strokeStyle=`rgba(0,180,220,.25)`; ctx.lineWidth=.7;
+          ctx.strokeRect(dx*w-dw/2,dy,dw,dh);
+          // small book on desk
+          ctx.fillStyle='rgba(50,100,140,.5)';
+          ctx.fillRect(dx*w-dw*.3,dy+dh*.1,dw*.5,dh*.6);
+        });
+      });
+    }
+
+    if(env==='road'){
+      // Draw road perspective
+      const roadW=w*.28+(fbMode==='desactivado'?18:S.stress)*.8;
+      ctx.fillStyle='rgba(15,15,25,.92)';
+      const rLeft=w/2-roadW/2, rRight=w/2+roadW/2;
+      ctx.beginPath(); ctx.moveTo(w*.49,hor); ctx.lineTo(w*.51,hor);
+      ctx.lineTo(rRight,h); ctx.lineTo(rLeft,h); ctx.closePath(); ctx.fill();
+      // Road markings
+      ctx.strokeStyle='rgba(255,220,50,.55)'; ctx.lineWidth=2; ctx.setLineDash([h*.08,h*.04]);
+      ctx.beginPath(); ctx.moveTo(w/2,hor); ctx.lineTo(w/2,h); ctx.stroke();
+      ctx.setLineDash([]);
+      // Road edge lines
+      ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(w*.49,hor); ctx.lineTo(rLeft,h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w*.51,hor); ctx.lineTo(rRight,h); ctx.stroke();
+      // Oncoming headlights
+      for(let i=0;i<3;i++){
+        const lt=frame*.012+i*2.1;
+        const lp=((lt)%3)/3; // 0..1 approaching
+        const hlx=w/2+(i%2===0?-1:1)*(roadW*.18+roadW*.1*lp);
+        const hly=hor+(h-hor)*lp;
+        const lsz=4+lp*14;
+        const lg2=ctx.createRadialGradient(hlx,hly,0,hlx,hly,lsz);
+        lg2.addColorStop(0,'rgba(255,240,180,.7)'); lg2.addColorStop(1,'transparent');
+        ctx.fillStyle=lg2; ctx.beginPath(); ctx.arc(hlx,hly,lsz,0,Math.PI*2); ctx.fill();
+      }
+      // Road surface glow
+      const rgd=ctx.createLinearGradient(0,hor,0,h);
+      rgd.addColorStop(0,'transparent'); rgd.addColorStop(.5,'rgba(40,40,100,.08)'); rgd.addColorStop(1,'transparent');
+      ctx.fillStyle=rgd; ctx.fillRect(rLeft,hor,roadW,h-hor);
+    }
+
+    if(env==='factory'){
+      // Industrial machines, pipes
+      // Floor grid
+      ctx.strokeStyle='rgba(0,180,60,.08)'; ctx.lineWidth=.6;
+      for(let i=0;i<=10;i++){ctx.beginPath();ctx.moveTo(w*i/10,hor);ctx.lineTo(w*i/10,h);ctx.stroke();}
+      for(let i=1;i<=5;i++){ctx.beginPath();ctx.moveTo(0,hor+(h-hor)*i/5);ctx.lineTo(w,hor+(h-hor)*i/5);ctx.stroke();}
+      // Machines silhouettes
+      const machines=[[.1,.7,.12,.28],[.3,.62,.16,.32],[.55,.68,.1,.26],[.75,.75,.18,.22]];
+      machines.forEach(([mx,my,mw,mh])=>{
+        ctx.fillStyle='rgba(5,25,10,.88)';
+        ctx.fillRect(mx*w,my*h,mw*w,mh*h);
+        ctx.strokeStyle='rgba(0,200,80,.22)'; ctx.lineWidth=1.2;
+        ctx.strokeRect(mx*w,my*h,mw*w,mh*h);
+        // blinking indicator
+        const bl=(frame*.06+mx*10)%1>.5;
+        if(bl){ctx.fillStyle='rgba(0,255,80,.7)';ctx.beginPath();ctx.arc(mx*w+mw*w*.8,my*h+mh*h*.15,3,0,Math.PI*2);ctx.fill();}
+      });
+      // Pipes horizontal
+      [[.3,.15],[.3,.45],[.3,.7]].forEach(([py,pw])=>{
+        ctx.fillStyle='rgba(0,60,20,.7)';
+        ctx.fillRect(0,py*h,pw*w,6);
+        ctx.strokeStyle='rgba(0,200,80,.18)'; ctx.lineWidth=1; ctx.strokeRect(0,py*h,pw*w,6);
+      });
+      // Warning stripes at bottom
+      ctx.save(); ctx.globalAlpha=.12;
+      for(let i=0;i<20;i++){
+        ctx.fillStyle=i%2===0?'rgba(255,180,0,1)':'rgba(0,0,0,0)';
+        ctx.fillRect(i*(w/20),h-22,w/20,22);
+      }
+      ctx.restore();
+    }
+
+    if(env==='office'){
+      // Window blinds in background
+      for(let i=0;i<8;i++){
+        const wy=hor-h*.16+i*h*.022;
+        ctx.fillStyle=`rgba(20,40,80,${0.3+i*.02})`;
+        ctx.fillRect(w*.1,wy,w*.36,h*.018);
+        ctx.fillRect(w*.54,wy,w*.36,h*.018);
+      }
+      // Table surface in foreground
+      ctx.fillStyle='rgba(10,25,45,.88)';
+      ctx.fillRect(0,h*.78,w,h*.22);
+      ctx.strokeStyle='rgba(60,120,200,.25)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(0,h*.78); ctx.lineTo(w,h*.78); ctx.stroke();
+      // Laptop on table
+      const laptopX=w*.35;
+      ctx.fillStyle='rgba(15,35,60,.9)'; ctx.fillRect(laptopX,h*.8,w*.3,h*.14);
+      ctx.fillStyle='rgba(0,80,180,.12)'; ctx.fillRect(laptopX+4,h*.81,w*.3-8,h*.12);
+      ctx.strokeStyle='rgba(60,140,255,.35)'; ctx.lineWidth=1; ctx.strokeRect(laptopX,h*.8,w*.3,h*.14);
+      // Screen glow
+      const sg2=ctx.createRadialGradient(w/2,h*.87,0,w/2,h*.87,w*.18);
+      sg2.addColorStop(0,'rgba(60,120,255,.18)'); sg2.addColorStop(1,'transparent');
+      ctx.fillStyle=sg2; ctx.fillRect(laptopX,h*.78,w*.3,h*.2);
+      // Coffee mug
+      ctx.fillStyle='rgba(25,45,65,.9)'; ctx.beginPath(); ctx.ellipse(w*.76,h*.84,w*.025,h*.04,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(100,150,255,.3)'; ctx.lineWidth=1; ctx.stroke();
+    }
+
+    if(env==='city'){
+      // City skyline buildings
+      const buildings=[[.02,.35,.10],[.12,.25,.08],[.20,.42,.06],[.26,.30,.09],[.35,.18,.07],[.42,.38,.05],[.47,.28,.08],[.55,.22,.06],[.61,.40,.09],[.68,.32,.07],[.75,.20,.10],[.84,.35,.06],[.90,.28,.08]];
+      buildings.forEach(([bx,bh,bw])=>{
+        // Building body
+        ctx.fillStyle='rgba(8,10,20,.9)';
+        ctx.fillRect(bx*w,hor-bh*hor,bw*w,bh*hor+2);
+        ctx.strokeStyle='rgba(255,160,30,.12)'; ctx.lineWidth=.5;
+        ctx.strokeRect(bx*w,hor-bh*hor,bw*w,bh*hor+2);
+        // Windows grid
+        const wCols=Math.max(2,Math.round(bw*w/8));
+        const wRows=Math.max(3,Math.round(bh*hor/10));
+        for(let wr=0;wr<wRows;wr++) for(let wc=0;wc<wCols;wc++){
+          const wx=bx*w+wc*(bw*w/wCols)+2;
+          const wy=hor-bh*hor+wr*(bh*hor/wRows)+3;
+          const lit=Math.sin(frame*.002+(bx+wr+wc)*13.7)>.1;
+          if(lit){
+            ctx.fillStyle=`rgba(${200+Math.round(Math.random()*30)},${160+Math.round(Math.random()*40)},${80+Math.round(Math.random()*30)},0.7)`;
+            ctx.fillRect(wx,wy,bw*w/wCols-3,bh*hor/wRows-3);
+          }
+        }
+      });
+      // Ground reflections
+      const rgd2=ctx.createLinearGradient(0,hor,0,hor+80);
+      rgd2.addColorStop(0,'rgba(255,160,30,.06)'); rgd2.addColorStop(1,'transparent');
+      ctx.fillStyle=rgd2; ctx.fillRect(0,hor,w,80);
+    }
+
+    if(env==='hospital'){
+      // Overhead fluorescent lights
+      for(let i=0;i<4;i++){
+        const lx2=w*(0.1+i*0.25);
+        const lg3=ctx.createRadialGradient(lx2,hor*.3,0,lx2,hor*.3,w*.18);
+        lg3.addColorStop(0,'rgba(200,240,240,.15)'); lg3.addColorStop(1,'transparent');
+        ctx.fillStyle=lg3; ctx.fillRect(0,0,w,hor);
+        ctx.fillStyle='rgba(180,230,230,.5)';
+        ctx.fillRect(lx2-w*.06,hor*.15,w*.12,h*.012);
+      }
+      // Monitor on right side — EKG trace
+      const monX=w*.68, monY=hor+h*.05, monW=w*.25, monH=h*.18;
+      ctx.fillStyle='rgba(5,20,20,.92)'; ctx.fillRect(monX,monY,monW,monH);
+      ctx.strokeStyle='rgba(0,200,180,.4)'; ctx.lineWidth=1.2; ctx.strokeRect(monX,monY,monW,monH);
+      // EKG line on monitor
+      ctx.beginPath(); ctx.strokeStyle='rgba(0,255,180,.8)'; ctx.lineWidth=1.5;
+      const eqT=frame*.12;
+      for(let x2=0;x2<monW;x2++){
+        const t2=eqT+x2*0.15;
+        let y2=monY+monH/2;
+        const ph=t2%(Math.PI*2);
+        if(ph<0.3) y2-=h*.06*Math.sin(ph/0.3*Math.PI);
+        else if(ph<0.5) y2+=h*.03*Math.sin((ph-0.3)/0.2*Math.PI);
+        x2===0?ctx.moveTo(monX+x2,y2):ctx.lineTo(monX+x2,y2);
+      }
+      ctx.stroke();
+      // Bed silhouette
+      ctx.fillStyle='rgba(15,40,40,.85)';
+      ctx.fillRect(w*.05,h*.72,w*.45,h*.14);
+      ctx.fillRect(w*.06,h*.64,w*.12,h*.08);
+      // Floor tiles
+      ctx.strokeStyle='rgba(0,150,140,.06)'; ctx.lineWidth=.5;
+      for(let tx=0;tx<w;tx+=w*.1) {ctx.beginPath();ctx.moveTo(tx,hor);ctx.lineTo(tx,h);ctx.stroke();}
+    }
+
+    if(env==='stadium'){
+      // Stadium arch / lights
+      for(let i=0;i<6;i++){
+        const sx=w*(.08+i*.16);
+        const sg3=ctx.createRadialGradient(sx,hor*.4,0,sx,hor*.4,w*.12);
+        sg3.addColorStop(0,'rgba(200,255,150,.18)'); sg3.addColorStop(1,'transparent');
+        ctx.fillStyle=sg3; ctx.fillRect(0,0,w,hor);
+        ctx.fillStyle='rgba(220,255,180,.6)';
+        ctx.fillRect(sx-2,hor*.05,4,hor*.35);
+        ctx.fillRect(sx-w*.04,hor*.05,w*.08,h*.01);
+      }
+      // Track oval
+      ctx.strokeStyle='rgba(255,200,80,.25)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.ellipse(w/2,hor+h*.12,w*.38,h*.1,0,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle='rgba(255,200,80,.12)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.ellipse(w/2,hor+h*.12,w*.30,h*.07,0,0,Math.PI*2); ctx.stroke();
+      // Lane lines on track
+      for(let ln=0;ln<6;ln++){
+        const lr=(0.30+ln*0.016);
+        ctx.strokeStyle=`rgba(255,220,120,${0.06+ln*.01})`; ctx.lineWidth=.8;
+        ctx.beginPath(); ctx.ellipse(w/2,hor+h*.12,w*lr,h*(lr*.25),0,0,Math.PI*2); ctx.stroke();
+      }
+      // Crowd silhouette on stands
+      ctx.fillStyle='rgba(10,25,15,.7)';
+      ctx.fillRect(0,hor-h*.12,w,h*.12);
+      // Crowd dots
+      for(let cd=0;cd<80;cd++){
+        const cx3=Math.random()*w, cy3=hor-h*.11+Math.random()*h*.1;
+        const ca=Math.sin(frame*.03+cd*.7)*.2+.4;
+        ctx.fillStyle=`rgba(${100+Math.round(Math.random()*80)},${140+Math.round(Math.random()*60)},${80+Math.round(Math.random()*60)},${ca})`;
+        ctx.beginPath(); ctx.arc(cx3,cy3,2,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    // LIGHTNING for estres scenario
+    if(S.scenario==='estres'&&frame%80<3){
+      ctx.strokeStyle='rgba(255,220,100,.85)'; ctx.lineWidth=1.5;
+      const boltX=w*.2+Math.random()*w*.6;
+      ctx.beginPath(); ctx.moveTo(boltX,0);
+      let bx=boltX,by=0;
+      while(by<hor){bx+=(Math.random()-.5)*30;by+=20;ctx.lineTo(bx,by);}
+      ctx.stroke();
+    }
+
+    // ── NEUROFEEDBACK VISUAL SIMULADO: overlay reactivo al estado cognitivo ──
+    if(S.running&&fbMode!=='desactivado'){
+      // Alta Carga / Estrés → luminosidad baja y saturación reducida (velo oscuro)
+      const stressOverlay=Math.max(0,stN-0.35)*0.55;
+      if(stressOverlay>0.01){
+        ctx.fillStyle=`rgba(8,3,3,${stressOverlay})`;
+        ctx.fillRect(0,0,w,h);
+      }
+      // Alta Eficiencia Cognitiva → entorno más vívido y luminoso (resplandor frío)
+      const effOverlay=Math.max(0,atN-0.6)*Math.max(0,1-stN*1.4)*0.5;
+      if(effOverlay>0.01){
+        const eg=ctx.createRadialGradient(w/2,hor*.6,0,w/2,hor*.6,w*.7);
+        eg.addColorStop(0,`rgba(120,220,255,${effOverlay*.4})`); eg.addColorStop(1,'transparent');
+        ctx.fillStyle=eg; ctx.fillRect(0,0,w,h);
+      }
+    }
+
+    // ── GAME OVERLAY ──
+    if(S.running&&!S.paused){
+      const game=GAMES[G.gameIdx]; const now=performance.now();
+
+      // COUNTDOWN
+      if(G.countdownActive&&G.countdownVal>0){
+        ctx.save(); ctx.font='bold '+Math.round(h*.17)+'px Orbitron,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle=`rgba(${pr},${pg2},${pb2},.9)`;
+        ctx.shadowColor=`rgba(${pr},${pg2},${pb2},.7)`; ctx.shadowBlur=28;
+        ctx.fillText(G.countdownVal,w/2,h/2); ctx.shadowBlur=0; ctx.restore();
+        // Game name
+        ctx.save(); ctx.font='bold 14px Orbitron,monospace'; ctx.textAlign='center';
+        ctx.fillStyle=`rgba(${pr},${pg2},${pb2},.8)`; ctx.fillText('— '+game.name.toUpperCase()+' —',w/2,h/2+h*.14); ctx.restore();
+      }
+
+      // SEQUENCE GRID
+      if(G.active&&game.id==='sequence'){
+        const grid=seqGrid(); const inp=G.seqPhase==='input';
+        grid.forEach((c,i)=>{
+          ctx.beginPath(); ctx.arc(c.x,c.y,20,0,Math.PI*2);
+          ctx.fillStyle=inp?'rgba(0,180,255,.14)':'rgba(0,100,150,.08)'; ctx.fill();
+          ctx.strokeStyle=inp?'rgba(0,220,255,.65)':'rgba(0,150,200,.25)'; ctx.lineWidth=1.5; ctx.stroke();
+          if(inp){ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(0,200,255,.55)';ctx.fillText(i+1,c.x,c.y);}
+        });
+        ctx.font='bold 12px Rajdhani,sans-serif'; ctx.textAlign='center';
+        ctx.fillStyle=inp?'rgba(255,210,0,.9)':'rgba(0,220,255,.8)';
+        ctx.fillText(inp?`REPITE: ${G.seqInput.length}/${G.seqPattern.length}`:'MEMORIZA LA SECUENCIA...',w/2,h-82);
+      }
+
+      // TRACK TARGET
+      if(G.active&&game.id==='track'&&G.trackTarget){
+        const t=G.trackTarget,on=G.trackOnTarget,pulse=Math.sin(now*.009)*.25+.75;
+        ctx.beginPath(); ctx.arc(t.x,t.y,t.r+9,0,Math.PI*2);
+        ctx.strokeStyle=on?`rgba(0,255,136,${pulse})`:`rgba(170,136,255,${pulse*.65})`; ctx.lineWidth=2; ctx.stroke();
+        const tg=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,t.r);
+        tg.addColorStop(0,on?'rgba(0,255,136,.6)':'rgba(160,120,255,.4)'); tg.addColorStop(1,'transparent');
+        ctx.fillStyle=tg; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle=on?'rgba(0,255,136,.8)':'rgba(190,160,255,.65)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(t.x-t.r*1.6,t.y);ctx.lineTo(t.x+t.r*1.6,t.y);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(t.x,t.y-t.r*1.6);ctx.lineTo(t.x,t.y+t.r*1.6);ctx.stroke();
+        const tp=Math.min(1,G.trackTime/200);
+        ctx.fillStyle='rgba(0,0,0,.38)'; ctx.fillRect(w/2-75,h-72,150,7);
+        ctx.fillStyle=on?'rgba(0,255,136,.75)':'rgba(80,80,80,.38)'; ctx.fillRect(w/2-75,h-72,150*tp,7);
+        ctx.font='10px Rajdhani,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='rgba(200,220,255,.7)';
+        ctx.fillText('TIEMPO EN FOCO: '+Math.round(tp*100)+'%',w/2,h-56);
+      }
+
+      // TARGETS
+      G.targets.forEach(t=>{
+        const age=(now-t.born)/t.ttl, life=1-age;
+        if(life<=0&&!t.hit) return;
+        let cr,cg3,cb,gStr;
+        if(t.type==='cyan'||t.type==='seq-show'){cr=0;cg3=229;cb=255;gStr='0,229,255';}
+        else if(t.type==='gold'){cr=255;cg3=220;cb=0;gStr='255,220,0';}
+        else if(t.type==='decoy'){cr=255;cg3=60;cb=60;gStr='255,60,60';}
+        else if(t.type==='good'){cr=0;cg3=255;cb=100;gStr='0,255,100';}
+        else if(t.type==='bad'){cr=255;cg3=50;cb=50;gStr='255,50,50';}
+        else if(t.type==='seq-correct'){cr=68;cg3=255;cb=100;gStr='68,255,100';}
+        else if(t.type==='seq-wrong'){cr=255;cg3=60;cb=60;gStr='255,60,60';}
+        else{cr=100;cg3=200;cb=255;gStr='100,200,255';}
+
+        if(t.hit){
+          const boom=Math.min(1,(now-t.born-t.ttl*.0)/320);
+          for(let p=0;p<8;p++){
+            const pa=(p/8)*Math.PI*2,pr2=boom*t.r*2.8;
+            ctx.beginPath(); ctx.arc(t.x+Math.cos(pa)*pr2,t.y+Math.sin(pa)*pr2,2.4*(1-boom),0,Math.PI*2);
+            ctx.fillStyle=`rgba(${cr},${cg3},${cb},${(1-boom)*.85})`; ctx.fill();
+          }
+          return;
+        }
+        // TTL arc
+        ctx.beginPath(); ctx.arc(t.x,t.y,t.r+5,0,Math.PI*2*life);
+        ctx.strokeStyle=`rgba(${gStr},.45)`; ctx.lineWidth=2; ctx.stroke();
+        // Glow
+        const glg=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,t.r*1.75);
+        glg.addColorStop(0,`rgba(${gStr},${life*.3})`); glg.addColorStop(1,'transparent');
+        ctx.fillStyle=glg; ctx.beginPath(); ctx.arc(t.x,t.y,t.r*1.75,0,Math.PI*2); ctx.fill();
+        // Core
+        const cg4=ctx.createRadialGradient(t.x-t.r*.28,t.y-t.r*.28,0,t.x,t.y,t.r);
+        cg4.addColorStop(0,`rgba(255,255,255,${life*.88})`);
+        cg4.addColorStop(.3,`rgba(${cr},${cg3},${cb},${life*.82})`);
+        cg4.addColorStop(1,`rgba(${Math.round(cr*.35)},${Math.round(cg3*.35)},${Math.round(cb*.35)},${life*.35})`);
+        ctx.fillStyle=cg4; ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2); ctx.fill();
+        // Labels
+        if(t.type==='good'||t.type==='bad'){
+          ctx.font=`bold ${Math.round(t.r*.82)}px Orbitron,monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillStyle=`rgba(255,255,255,${life*.9})`; ctx.fillText(t.type==='good'?'OK:':'✗',t.x,t.y);
+        }
+        if(t.type==='gold'){
+          ctx.font=`bold ${Math.round(t.r*.78)}px Orbitron,monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillStyle=`rgba(255,250,180,${life*.9})`; ctx.fillText('!',t.x,t.y);
+        }
+      });
+
+      // FLASH
+      if(G.flashAlpha>0){
+        ctx.save(); ctx.font='bold 17px Orbitron,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle=G.flashColor||'#fff'; ctx.globalAlpha=G.flashAlpha;
+        ctx.fillText(G.flashMsg,G.flashX,G.flashY-22); ctx.globalAlpha=1; ctx.restore();
+        G.flashAlpha=Math.max(0,G.flashAlpha-.038);
+      }
+
+      // SCORE HUD (top center of canvas)
+      ctx.save(); ctx.font='bold 13px Orbitron,monospace'; ctx.textAlign='center';
+      ctx.fillStyle='rgba(255,170,0,.85)';
+      ctx.fillText('PUNTOS: '+G.score+(G.combo>2?' COMBO x'+(G.combo>5?3:2):''),w/2,20);
+      ctx.restore();
+    }
+
+    frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ════════════════════════════════════════════
+//  BRAIN CANVAS
+// ════════════════════════════════════════════
+function initBrain(canvasId,size){
+  const canvas=document.getElementById(canvasId); if(!canvas) return;
+  canvas.width=size||180; canvas.height=(size||140);
+  const ctx=canvas.getContext('2d'); let frame=0;
+  function brainPath(cx,cy,rx,ry){
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-ry*.95);
+    ctx.bezierCurveTo(cx+rx*.55,cy-ry*1.05,cx+rx*1.05,cy-ry*.6,cx+rx,cy-ry*.05);
+    ctx.bezierCurveTo(cx+rx*1.05,cy+ry*.45,cx+rx*.7,cy+ry*.85,cx+rx*.15,cy+ry*.9);
+    ctx.bezierCurveTo(cx+rx*.05,cy+ry,cx-rx*.05,cy+ry,cx-rx*.15,cy+ry*.9);
+    ctx.bezierCurveTo(cx-rx*.7,cy+ry*.85,cx-rx*1.05,cy+ry*.45,cx-rx,cy-ry*.05);
+    ctx.bezierCurveTo(cx-rx*1.05,cy-ry*.6,cx-rx*.55,cy-ry*1.05,cx,cy-ry*.95);
+    ctx.closePath();
+  }
+  function drawB(){
+    const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+4,rx=w*.43,ry=h*.42;
+    ctx.clearRect(0,0,w,h);
+    const st=S.running?S.stress/100:.2, at=S.running?S.attention/100:.5, ld=S.running?S.load/100:.4;
+    // halo
+    const hR=st>.6?'255,60,60':at>.6?'50,150,255':'0,160,200';
+    const hA=.05+Math.sin(frame*.06)*.025;
+    const hG=ctx.createRadialGradient(cx,cy,rx*.5,cx,cy,rx*1.4);
+    hG.addColorStop(0,`rgba(${hR},0)`); hG.addColorStop(.7,`rgba(${hR},${hA})`); hG.addColorStop(1,'transparent');
+    ctx.fillStyle=hG; ctx.fillRect(0,0,w,h);
+    // fill
+    brainPath(cx,cy,rx,ry); ctx.fillStyle='rgba(4,18,32,.95)'; ctx.fill();
+    // zones
+    [[cx,cy-ry*.52,rx*.35+at*rx*.2,60,140,255,at],[cx+rx*.12,cy+ry*.14,rx*.28+st*rx*.18,255,55,55,st],[cx+rx*.2,cy-ry*.1,rx*.24+ld*rx*.15,255,165,0,ld]].forEach(([zx,zy,zr,r,g,b,v])=>{
+      const p=Math.sin(frame*(.08+v*.04)+r*.01)*.28+.72;
+      const zg=ctx.createRadialGradient(zx,zy,0,zx,zy,zr);
+      zg.addColorStop(0,`rgba(${r},${g},${b},${v*p*.82})`); zg.addColorStop(.55,`rgba(${r},${g},${b},${v*p*.3})`); zg.addColorStop(1,'transparent');
+      ctx.fillStyle=zg; ctx.beginPath(); ctx.ellipse(zx,zy,zr,zr*.72,0,0,Math.PI*2); ctx.fill();
+    });
+    // sulci
+    ctx.strokeStyle='rgba(0,180,220,.19)'; ctx.lineWidth=.9;
+    ctx.beginPath(); ctx.moveTo(cx,cy-ry*.94); ctx.bezierCurveTo(cx+2,cy-ry*.3,cx-2,cy+ry*.3,cx,cy+ry*.89); ctx.stroke();
+    [[cx+rx*.24,cy-ry*.64,cx+rx*.74,cy-ry*.34,cx+rx*.84,cy+ry*.14],[cx+rx*.16,cy-ry*.22,cx+rx*.64,cy-.02,cx+rx*.78,cy+ry*.38],[cx-rx*.24,cy-ry*.64,cx-rx*.74,cy-ry*.34,cx-rx*.84,cy+ry*.14],[cx-rx*.16,cy-ry*.22,cx-rx*.64,cy-.02,cx-rx*.78,cy+ry*.38]].forEach(([x1,y1,x2,y2,x3,y3])=>{
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(x2,y2,x3,y3); ctx.stroke();
+    });
+    // outline
+    brainPath(cx,cy,rx,ry); ctx.strokeStyle='rgba(0,160,210,.42)'; ctx.lineWidth=1.2; ctx.stroke();
+    // sparks
+    if(S.running&&!S.paused) for(let i=0;i<5;i++){
+      const a=(frame*.04+i*(Math.PI*2/5))%(Math.PI*2);
+      const sx=cx+Math.cos(a)*rx*.52,sy=cy+Math.sin(a)*ry*.55;
+      const dx2=(sx-cx)/rx,dy2=(sy-cy)/ry;
+      if(dx2*dx2+dy2*dy2>1) continue;
+      const sa=Math.sin(frame*.13+i*1.1)*.32+.18;
+      ctx.beginPath(); ctx.arc(sx,sy,1.7,0,Math.PI*2); ctx.fillStyle=`rgba(0,220,255,${sa})`; ctx.fill();
+    }
+    frame++; requestAnimationFrame(drawB);
+  }
+  drawB();
+}
+
+// ════════════════════════════════════════════
+//  WAVES
+// ════════════════════════════════════════════
+function initWave(id,color,freq,getVal){
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); let frame=0; const data=new Array(100).fill(0);
+  function draw(){
+    const w=canvas.offsetWidth||180,h=canvas.offsetHeight||38;
+    canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
+    data.push(getVal()*Math.sin(frame*freq)+Math.random()*.08);
+    if(data.length>w) data.shift();
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=1.2;
+    data.forEach((v,i)=>{const x=i,y=h/2+v*(h*.34);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke(); frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+function initNeuroWave(id){
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); let frame=0;
+  function draw(){
+    const w=canvas.offsetWidth||180,h=canvas.offsetHeight||36;
+    canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
+    const st=S.running?S.stress/100:.3, at=S.running?S.attention/100:.5;
+    ctx.beginPath(); ctx.strokeStyle='rgba(0,180,220,.7)'; ctx.lineWidth=1.4;
+    for(let x=0;x<w;x++){const t=x/w*Math.PI*6+frame*.05;const y=h/2+Math.sin(t)*h*.24*at+Math.sin(t*2.2)*h*.1*st;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke(); frame++; requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ════════════════════════════════════════════
+//  RESULTS
+// ════════════════════════════════════════════
+function renderResults(){
+  if(S.history.attention.length===0) return;
+  const avg=n=>arr=>arr.slice(-n).reduce((a,b)=>a+b,0)/Math.max(1,n);
+  const aA=Math.round(avg(40)(S.history.attention)), aE=Math.round(avg(40)(S.history.stress)), aC=Math.round(avg(40)(S.history.load));
+  const aL=+(avg(25)(S.history.latency)).toFixed(1), aP=Math.round(avg(25)(S.history.precision));
+  const eff=Math.round(aA*.4+(100-aE)*.35+(100-aC)*.25);
+  document.getElementById('resAt').textContent=aA;
+  document.getElementById('resEs').textContent=aE;
+  document.getElementById('resCg').textContent=aC;
+  
+  // MOSTRAR LÍNEA BASE GUARDADA
+  const baselineAt=sessionStorage.getItem('baselineAttention')||'--';
+  const baselineEs=sessionStorage.getItem('baselineStress')||'--';
+  const baselineCg=sessionStorage.getItem('baselineLoad')||'--';
+  document.getElementById('baselineAtVal').textContent=baselineAt;
+  document.getElementById('baselineEsVal').textContent=baselineEs;
+  document.getElementById('baselineCgVal').textContent=baselineCg;
+  
+  document.getElementById('resLatV').textContent=aL+' seg.';
+  document.getElementById('resPrecV').textContent=aP+'%';
+  document.getElementById('resNavV').textContent=Math.round(avg(20)(S.history.stress)*.28+12);
+  const lS=aL>2?'PROLONGADA':aL>1.4?'MODERADA':'ÓPTIMA';
+  const pS=aP<50?'BAJA':aP<75?'MODERADA':'ALTA';
+  document.getElementById('resLatS').textContent=lS; document.getElementById('resLatS').style.color=aL>2?'var(--red)':aL>1.4?'var(--amber)':'var(--green)';
+  document.getElementById('resPrecS').textContent=pS; document.getElementById('resPrecS').style.color=aP<50?'var(--red)':aP<75?'var(--amber)':'var(--green)';
+  const m=String(Math.floor(S.time/60)).padStart(2,'0'), sc2=String(S.time%60).padStart(2,'0');
+  document.getElementById('resDur').textContent=m+':'+sc2;
+  document.getElementById('resDiff').textContent='DIFICULTAD: '+S.difficulty.toUpperCase();
+  document.getElementById('resDiff').className='diff-badge '+(S.difficulty==='alta'?'diff-high':S.difficulty==='baja'?'diff-low':'diff-mid');
+  document.getElementById('resultsUser').textContent=S.userName+' · '+S.sessionType+' · '+S.scenario.toUpperCase();
+  document.getElementById('resScore').textContent=G.score.toLocaleString();
+  document.getElementById('resScoreSub').textContent='puntos · '+G.hits+' aciertos / '+G.totalTrials+' intentos';
+  drawGauge(eff); drawResultBrain(aA/100,aE/100,aC/100); drawResultNeuro(aE/100,aA/100);
+  buildRecs(aA,aE,aC,aP);
+}
+function drawGauge(val){
+  const canvas=document.getElementById('gaugeCanvas'); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+8,r=42;
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI*.75,Math.PI*2.25); ctx.strokeStyle='rgba(0,100,130,.3)'; ctx.lineWidth=7; ctx.stroke();
+  const color=val<40?'#ff3b3b':val<65?'#ffaa00':'#00e5ff';
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI*.75,Math.PI*.75+val/100*Math.PI*1.5); ctx.strokeStyle=color; ctx.lineWidth=7; ctx.lineCap='round'; ctx.stroke();
+  document.getElementById('gaugeNum').textContent=val; document.getElementById('gaugeNum').style.color=color;
+}
+function drawResultBrain(at,st,ld){
+  const canvas=document.getElementById('brainResult'); if(!canvas) return;
+  canvas.width=canvas.offsetWidth||280; canvas.height=150;
+  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2+4,rx=w*.42,ry=h*.43;
+  ctx.clearRect(0,0,w,h);
+  function bp(){ctx.beginPath();ctx.moveTo(cx,cy-ry*.95);ctx.bezierCurveTo(cx+rx*.55,cy-ry*1.05,cx+rx*1.05,cy-ry*.6,cx+rx,cy-ry*.05);ctx.bezierCurveTo(cx+rx*1.05,cy+ry*.45,cx+rx*.7,cy+ry*.85,cx+rx*.15,cy+ry*.9);ctx.bezierCurveTo(cx+rx*.05,cy+ry,cx-rx*.05,cy+ry,cx-rx*.15,cy+ry*.9);ctx.bezierCurveTo(cx-rx*.7,cy+ry*.85,cx-rx*1.05,cy+ry*.45,cx-rx,cy-ry*.05);ctx.bezierCurveTo(cx-rx*1.05,cy-ry*.6,cx-rx*.55,cy-ry*1.05,cx,cy-ry*.95);ctx.closePath();}
+  bp(); ctx.fillStyle='rgba(4,18,32,.95)'; ctx.fill();
+  [[cx,cy-ry*.5,rx*.36+at*rx*.22,60,140,255,at],[cx+rx*.12,cy+ry*.15,rx*.29+st*rx*.2,255,55,55,st],[cx+rx*.2,cy-ry*.1,rx*.25+ld*rx*.16,255,165,0,ld]].forEach(([zx,zy,zr,r,g,b,v])=>{
+    const gd=ctx.createRadialGradient(zx,zy,0,zx,zy,zr);
+    gd.addColorStop(0,`rgba(${r},${g},${b},${v*.82})`); gd.addColorStop(1,'transparent');
+    ctx.fillStyle=gd; ctx.beginPath(); ctx.ellipse(zx,zy,zr,zr*.72,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.strokeStyle='rgba(0,180,220,.18)'; ctx.lineWidth=.9;
+  ctx.beginPath(); ctx.moveTo(cx,cy-ry*.94); ctx.bezierCurveTo(cx+2,cy-ry*.3,cx-2,cy+ry*.3,cx,cy+ry*.89); ctx.stroke();
+  bp(); ctx.strokeStyle='rgba(0,160,210,.42)'; ctx.lineWidth=1.2; ctx.stroke();
+}
+function drawResultNeuro(st,at){
+  const canvas=document.getElementById('neuroResult'); if(!canvas) return;
+  canvas.width=canvas.offsetWidth||280; canvas.height=36; const ctx=canvas.getContext('2d');
+  const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.strokeStyle='rgba(0,180,220,.8)'; ctx.lineWidth=1.4;
+  for(let x=0;x<w;x++){const t=x/w*Math.PI*8;const y=h/2+Math.sin(t)*h*.3*at+Math.sin(t*2.1)*h*.12*st;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+function buildRecs(at,es,ld,pr){
+  const ctx=S.scenario;
+  const recs=[];
+  if(es>65) recs.push({text:'Signos de incremento en estrés — se recomienda intervención psicológica'});
+  if(ld>65) recs.push({text:'Indicadores de carga mental alta — evaluar demanda de tareas'});
+  if(at<40)  recs.push({text:'Patrones de atención inconsistente — explorar técnicas de foco'});
+  if(pr<55)  recs.push({text:'Precisión reducida — posible fatiga cognitiva acumulada'});
+  if(at>70&&es<40) recs.push({text:'Estado cognitivo óptimo registrado en segmentos de la sesión'});
+  // Context-specific
+  if(ctx==='maquinaria'&&(es>55||at<50)) recs.push({text:'ALERTA SEGURIDAD LABORAL: Nivel de atención o estrés no óptimo para operar maquinaria. Se recomienda descanso antes de iniciar labores.'});
+  if(ctx==='conduccion'&&S.latency>1.8) recs.push({text:'ATENCIÓN VIAL: Latencia de respuesta elevada. Considerar no conducir en este estado cognitivo.'});
+  if(ctx==='entrevista'&&es>60) recs.push({text:'Nivel de estrés elevado para entrevista. Recomendar técnicas de respiración previas al encuentro.'});
+  if(ctx==='examen'&&ld>65) recs.push({text:'Carga mental alta previa al examen. Sugerida estrategia de espaciado cognitivo y descanso.'});
+  if(recs.length===0) recs.push({text:'Desempeño dentro de parámetros esperados para la sesión'});
+  const prom=es>60||ld>65?'Promover ejercicios de respiración y técnicas de relajación':at<40?'Promover entrenamiento de atención selectiva y mindfulness':'Mantener rutina cognitiva. Considerar incrementar dificultad en próxima sesión.';
+  document.getElementById('recList').innerHTML=recs.map(r=>`<li class="rec-item"><span class="rec-text">${r.text}</span></li>`).join('');
+  document.getElementById('promoverText').textContent=prom;
+}
+
+// ════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════
+function exportarJSON(){
+  const avg=n=>arr=>+(arr.slice(-n).reduce((a,b)=>a+b,0)/Math.max(1,n)).toFixed(2);
+  const d={usuario:S.userName,sesion:S.sessionType,escenario:S.scenario,modoEvaluacion:S.evalMode,feedbackAmbiental:S.feedbackAmbiental,duracion:document.getElementById('resDur').textContent,puntuacion:G.score,aciertos:G.hits,intentos:G.totalTrials,metricas:{atencion:Math.round(avg(40)(S.history.attention)),estres:Math.round(avg(40)(S.history.stress)),carga:Math.round(avg(40)(S.history.load)),latencia:avg(25)(S.history.latency),precision:Math.round(avg(25)(S.history.precision))},timestamp:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='cognilith_'+S.userName+'_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
+  notify('Informe JSON descargado.','info');
+}
+
+// ════════════════════════════════════════════
+//  RESET
+// ════════════════════════════════════════════
+function nuevaSesion(){
+  stopAudio();
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  S.running=false;S.paused=false;S.time=0;
+  S.attention=50;S.stress=20;S.load=40;
+  S.history={attention:[],stress:[],load:[],latency:[],precision:[]};
+  G.active=false;G.score=0;G.hits=0;G.misses=0;G.totalTrials=0;
+  G.targets=[];G.combo=0;G.gameIdx=0;G.countdownActive=false;G.reactionTimes=[];G.trackTarget=null;G.trackTime=0;
+  const c=document.getElementById('scene3d');
+  if(c){c.onclick=null;c.onmousemove=null;c.style.cursor='default';}
+  if(S.timerInterval) clearInterval(S.timerInterval);
+  if(S.animInterval) clearInterval(S.animInterval);
+  document.getElementById('gameTimer').textContent='00:00';
+  document.getElementById('timerDisplay').textContent='00:00';
+  document.getElementById('statusText').textContent='SISTEMA LISTO';
+  document.getElementById('btnPausar').textContent='PAUSAR';
+  document.getElementById('challengeText').textContent='Presiona INICIAR en el panel derecho';
+  showScreen('calib'); notify('Sistema reiniciado.','info');
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initDefaultUsers();
+  generarSesionesPrueba();
+  // Set default sessionType from initial scenario
+  S.sessionType=SCENARIO_LABELS[S.scenario]||S.scenario;
+  // restore session if exists
+  const saved=sessionStorage.getItem('cognilith_current');
+  if(saved){
+    currentUser=JSON.parse(saved);
+    document.getElementById('loginOverlay').classList.add('hidden');
+    updateUserBadge();
+  }
+  updateMusicBtn();
+  initScene();
+  initBrain('brainCanvas',180);
+  initWave('waveEEG','rgba(0,200,220,.8)',.15,()=>S.running?S.attention/100*.8:.3);
+  initWave('waveBPM','rgba(255,100,80,.7)',.08,()=>S.running?S.stress/100*.9:.2);
+  initNeuroWave('neuroWave');
+  renderTut();
+  
+  // ─── INICIALIZAR NOMBRE REGISTRADO ───
+  const userNameInput = document.getElementById('userName');
+  if(userNameInput){
+    // Inicializar con valor por defecto
+    actualizarNombre(userNameInput.value);
+    // Agregar event listener para cuando escribe
+    userNameInput.addEventListener('input', function(){
+      actualizarNombre(this.value);
+    });
+  }
+});
+</script>
+</body>
+</html>
